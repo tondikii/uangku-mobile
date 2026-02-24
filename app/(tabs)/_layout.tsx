@@ -17,12 +17,6 @@ const tabs = [
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
-  // const isLoggedIn = false;
-
-  // if (!isLoggedIn) {
-  //   return <Redirect href="../(auth)/login" />;
-  // }
-
   return (
     <Tabs
       screenOptions={{

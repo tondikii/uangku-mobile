@@ -1,0 +1,26 @@
+import {User, Wallet} from "./";
+
+export interface ApiResponse {
+  statusCode: number;
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
+export interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface GetWalletsResponse extends ApiResponse {
+  data?: Wallet[];
+}
+
+export interface SignInResponse extends ApiResponse {
+  data?: {
+    user: User;
+    accessToken: string;
+  };
+}

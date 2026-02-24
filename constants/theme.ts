@@ -3,26 +3,27 @@
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
-import { Platform } from 'react-native';
+import {Platform} from "react-native";
+import {MD3DarkTheme, MD3LightTheme} from "react-native-paper";
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const tintColorLight = "#0a7ea4";
+const tintColorDark = "#fff";
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: "#11181C",
+    background: "#fff",
     tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
+    icon: "#687076",
+    tabIconDefault: "#687076",
     tabIconSelected: tintColorLight,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
+    text: "#ECEDEE",
+    background: "#151718",
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: "#9BA1A6",
+    tabIconDefault: "#9BA1A6",
     tabIconSelected: tintColorDark,
   },
 };
@@ -30,24 +31,72 @@ export const Colors = {
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
+    sans: "system-ui",
     /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
+    serif: "ui-serif",
     /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
+    rounded: "ui-rounded",
     /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    mono: "ui-monospace",
   },
   default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+    sans: "normal",
+    serif: "serif",
+    rounded: "normal",
+    mono: "monospace",
   },
   web: {
     sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
+    rounded:
+      "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });
+
+// Paper Theme Colors Definition
+const customColors = {
+  // --- Primary ---
+  primary: "#4CAF7A",
+  onPrimary: "#FFFFFF",
+  primaryContainer: "#92E3A9",
+  onPrimaryContainer: "#1B4D2E",
+
+  // --- Secondary (Info/Blue) ---
+  secondary: "#4FC3F7",
+  onSecondary: "#FFFFFF",
+  secondaryContainer: "#E1F5FE",
+  onSecondaryContainer: "#004E6A",
+
+  // --- Tertiary (Warning/Orange) ---
+  tertiary: "#FFB74D",
+  onTertiary: "#5F3E00",
+  tertiaryContainer: "#FFF3E0",
+  onTertiaryContainer: "#663C00",
+
+  // --- Error (Danger/Red) ---
+  error: "#E57373",
+  onError: "#FFFFFF",
+  errorContainer: "#FFEBEE",
+  onErrorContainer: "#B71C1C",
+};
+
+export const lightTheme = {
+  ...MD3LightTheme,
+  colors: {
+    ...MD3LightTheme.colors,
+    ...customColors,
+    surface: "#F1FAF3", // Background hijau pucat untuk Light Mode
+  },
+};
+
+export const darkTheme = {
+  ...MD3DarkTheme,
+  colors: {
+    ...MD3DarkTheme.colors,
+    ...customColors,
+    // Di Dark Mode, surface sebaiknya tetap gelap agar tidak menyilaukan
+    surface: "#1A1C19",
+    primaryContainer: "#2D4F39", // Versi lebih gelap untuk Dark Mode
+  },
+};

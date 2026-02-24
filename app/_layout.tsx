@@ -1,20 +1,69 @@
 import {useColorScheme} from "@/hooks/use-color-scheme";
-import {DarkTheme, DefaultTheme, ThemeProvider} from "@react-navigation/native";
+import {useAuthStore} from "@/store/auth-store";
+import {
+  DarkTheme as NavigationDarkTheme,
+  DefaultTheme as NavigationDefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
 import {Stack} from "expo-router";
 import {StatusBar} from "expo-status-bar";
+import React from "react";
+import {PaperProvider, adaptNavigationTheme} from "react-native-paper";
+import {
+  SafeAreaProvider,
+  initialWindowMetrics,
+} from "react-native-safe-area-context";
+
+// import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import {darkTheme, lightTheme} from "@/constants/theme";
 import "react-native-reanimated";
+
+// adapt navigation theme to match react-native-paper theme
+const {LightTheme, DarkTheme} = adaptNavigationTheme({
+  reactNavigationLight: NavigationDefaultTheme,
+  reactNavigationDark: NavigationDarkTheme,
+});
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const {user} = useAuthStore();
+
+  // useEffect untuk Google Sign-In tetap dipertahankan sesuai permintaan
+  // useEffect(() => {
+  //   GoogleSignin.configure({
+  //     webClientId: process.env.EXPO_PUBLIC_CLIENT_ID,
+  //   });
+  // }, []);
+
+  // theme based on color scheme
+  const isDark = colorScheme === "dark";
+  const paperTheme = isDark ? darkTheme : lightTheme;
+  const navigationTheme = isDark ? DarkTheme : LightTheme;
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{headerShown: false}}>
-        <Stack.Screen name="(auth)/login" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="modal" options={{presentation: "modal"}} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <PaperProvider theme={paperTheme}>
+        <ThemeProvider value={navigationTheme}>
+          <Stack screenOptions={{headerShown: false}}>
+            {/* Grouping Protected Routes */}
+            <Stack.Protected guard={!user}>
+              <Stack.Screen name="auth" />
+            </Stack.Protected>
+
+            <Stack.Protected guard={Boolean(user)}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen
+                name="modal"
+                options={{
+                  presentation: "modal",
+                }}
+              />
+            </Stack.Protected>
+          </Stack>
+
+          <StatusBar style={isDark ? "light" : "dark"} />
+        </ThemeProvider>
+      </PaperProvider>
+    </SafeAreaProvider>
   );
 }
