@@ -15,6 +15,13 @@ export const formatIdr = (amount: number) => {
   }).format(amount);
 };
 
+export const getOperatorSymbol = (transactionTypeId: number) => {
+  // Asumsikan ID 1 untuk Income, ID 2 untuk Expense
+  if (transactionTypeId === 1) return "+ ";
+  if (transactionTypeId === 2) return "- ";
+  return ""; // Default jika tipe tidak dikenali
+};
+
 export const formatDate = (date: Date | string) => {
   return format(date, "yyyy-MM-dd");
 };

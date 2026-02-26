@@ -3,8 +3,8 @@
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
-import { Platform } from "react-native";
-import { MD3DarkTheme, MD3LightTheme } from "react-native-paper";
+import {Platform} from "react-native";
+import {MD3DarkTheme, MD3LightTheme} from "react-native-paper";
 
 const tintColorLight = "#0a7ea4";
 const tintColorDark = "#fff";
@@ -59,22 +59,28 @@ const customColors = {
   // --- Primary ---
   primary: "#4CAF7A",
   onPrimary: "#FFFFFF",
-  primaryContainer: "#e5ffec",
+  primaryContainer: "#E5FFEC",
   onPrimaryContainer: "#1B4D2E",
 
-  // --- Secondary (Info/Blue) ---
-  secondary: "#4FC3F7",
+  // --- Secondary (Neutral / Gray) ---
+  secondary: "#8E9BA6",
   onSecondary: "#FFFFFF",
-  secondaryContainer: "#E1F5FE",
-  onSecondaryContainer: "#004E6A",
+  secondaryContainer: "#E8EEF2",
+  onSecondaryContainer: "#2A343A",
 
-  // --- Tertiary (Warning/Orange) ---
+  // --- Info (Custom Blue) ---
+  info: "#4FC3F7",
+  onInfo: "#FFFFFF",
+  infoContainer: "#E1F5FE",
+  onInfoContainer: "#004E6A",
+
+  // --- Tertiary (Warning) ---
   tertiary: "#FFB74D",
   onTertiary: "#5F3E00",
   tertiaryContainer: "#FFF3E0",
   onTertiaryContainer: "#663C00",
 
-  // --- Error (Danger/Red) ---
+  // --- Error ---
   error: "#E57373",
   onError: "#FFFFFF",
   errorContainer: "#FFEBEE",
@@ -96,7 +102,18 @@ export const darkTheme = {
     ...MD3DarkTheme.colors,
     ...customColors,
     // Di Dark Mode, surface sebaiknya tetap gelap agar tidak menyilaukan
-    surface: "#1A1C19",
-    primaryContainer: "#2D4F39", // Versi lebih gelap untuk Dark Mode
+    surface: MD3DarkTheme.colors.surface, // Gunakan surface default yang gelap,
+    primaryContainer: "#2D4F39", // Versi lebih gelap untuk Dark Mode,
+
+    secondaryContainer: "#2B343A", // dark neutral gray
+    infoContainer: "#1F3F4D", // dark blue
+    tertiaryContainer: "#4A3415",
+    errorContainer: "#4B1E1E",
+
+    // Improve contrast
+    onSecondaryContainer: "#DCE3E8",
+    onInfoContainer: "#B3E5FC",
+    onTertiaryContainer: "#FFD8A8",
+    onErrorContainer: "#FFCDD2",
   },
 };

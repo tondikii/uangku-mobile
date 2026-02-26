@@ -1,4 +1,4 @@
-import {User, Wallet} from "./";
+import {Transaction, TransactionSummary, User, Wallet} from "./";
 
 export interface ApiResponse {
   statusCode: number;
@@ -22,5 +22,16 @@ export interface SignInResponse extends ApiResponse {
   data?: {
     user: User;
     accessToken: string;
+  };
+}
+
+export interface TransactionResponse {
+  statusCode: number;
+  success: boolean;
+  message: string;
+  data: {
+    data: Transaction[];
+    summary: TransactionSummary;
+    pagination: Pagination;
   };
 }
