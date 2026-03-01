@@ -1,1 +1,1 @@
-export {default as ManageMoney} from "./manage-money";
+export {default as FinanceAppIllustration} from "./finance-app-illustration";

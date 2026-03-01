@@ -11,7 +11,7 @@ const SummaryCard = ({data}: SummaryCardProps) => {
   const {colors} = useTheme();
   return (
     <Surface
-      style={[styles.wrapper, {backgroundColor: colors.surface}]}
+      style={[styles.wrapper, {backgroundColor: colors.background}]}
       mode="flat"
     >
       <View style={styles.summaryItem}>
@@ -21,21 +21,31 @@ const SummaryCard = ({data}: SummaryCardProps) => {
         </Text>
       </View>
 
-      <View style={styles.summaryDivider} />
+      <View
+        style={[
+          styles.summaryDivider,
+          {backgroundColor: colors.surfaceVariant},
+        ]}
+      />
 
       <View style={styles.summaryItem}>
-        <Text variant="labelSmall">Expenses</Text>
+        <Text variant="labelSmall">Expense</Text>
         <Text variant="bodySmall" style={styles.body}>
           - {formatIdr(data?.expense || 0)}
         </Text>
       </View>
 
-      <View style={styles.summaryDivider} />
+      <View
+        style={[
+          styles.summaryDivider,
+          {backgroundColor: colors.surfaceVariant},
+        ]}
+      />
 
       <View style={styles.summaryItem}>
         <Text variant="labelSmall">Balance</Text>
         <Text variant="bodySmall" style={styles.body}>
-          {data?.balance && data.balance >= 0 ? "+" : "-"}{" "}
+          {data?.balance ? (data.balance > 0 ? "+" : "-") : ""}{" "}
           {formatIdr(Math.abs(data?.balance || 0))}
         </Text>
       </View>
@@ -47,7 +57,9 @@ const styles = StyleSheet.create({
   wrapper: {
     flexDirection: "row",
     margin: 16,
-    padding: 16,
+    marginTop: 0,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
     borderRadius: 16,
     elevation: 2,
     justifyContent: "space-between",
@@ -66,7 +78,6 @@ const styles = StyleSheet.create({
 
   summaryDivider: {
     width: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
   },
 
   body: {fontWeight: "700"},

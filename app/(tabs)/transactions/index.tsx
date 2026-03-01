@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect} from "react";
 import {FlatList, RefreshControl, StyleSheet, View} from "react-native";
 import {
   ActivityIndicator,
@@ -8,15 +8,25 @@ import {
   Text,
   useTheme,
 } from "react-native-paper";
-import {SafeAreaView} from "react-native-safe-area-context";
 
-import {AddButton, Icon, SummaryCard, TransactionBadge} from "@/components/ui";
+import {AddButton, Icon, TransactionBadge} from "@/components/ui";
 import {useFetch} from "@/hooks/axios/use-fetch";
+import {useTransactionsStore} from "@/store/use-transactions-store";
 import {TransactionResponse} from "@/types";
 import {formatIdr, getOperatorSymbol, screenWidth} from "@/utils/common-utils";
+import {useRouter} from "expo-router";
 
 export default function TransactionScreen() {
   const {colors} = useTheme();
+  const router = useRouter();
+
+  const {
+    selectedDate,
+    setTransactionData,
+    transactions,
+    needsRefetch,
+    setNeedsRefetch,
+  } = useTransactionsStore();
 
   const {
     data: fetchedData,
@@ -24,46 +34,10 @@ export default function TransactionScreen() {
     error,
     refetch,
   } = useFetch<TransactionResponse>("/transactions", {
-    params: {date: new Date("2026-02-17")},
+    params: {
+      date: selectedDate.toLocaleDateString("sv-SE"),
+    },
   });
-
-  const data = fetchedData?.data;
-  const transactions = data?.data || [];
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{marginTop: 12}}>Loading transactions...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.centerContainer}>
-        <Icon name="triangle-exclamation" size={32} color={colors.error} />
-        <Text style={{marginTop: 12, marginBottom: 8}}>
-          Something went wrong
-        </Text>
-        <Button mode="contained" onPress={refetch}>
-          Retry
-        </Button>
-      </SafeAreaView>
-    );
-  }
-
-  if (!transactions.length) {
-    return (
-      <SafeAreaView style={styles.centerContainer}>
-        <Icon name="receipt" size={32} color={colors.secondary} />
-        <Text style={{marginTop: 12}}>No transactions yet</Text>
-        <Text style={{fontSize: 12, color: colors.secondary}}>
-          Your transactions will appear here
-        </Text>
-      </SafeAreaView>
-    );
-  }
 
   const renderItem = ({item}: any) => {
     const typeId = item.transactionType.id;
@@ -75,6 +49,10 @@ export default function TransactionScreen() {
     };
 
     const typeColor = getTypeColor();
+
+    const handlePress = () => {
+      router.push(`/transactions/${item.id}`);
+    };
 
     return (
       <List.Item
@@ -114,13 +92,48 @@ export default function TransactionScreen() {
             </View>
           </View>
         )}
+        onPress={handlePress}
       />
     );
   };
 
-  return (
-    <SafeAreaView edges={["left", "right"]} style={styles.container}>
-      <SummaryCard data={data?.summary} />
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{marginTop: 12}}>Loading transactions...</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.centerContainer}>
+          <Icon name="triangle-exclamation" size={32} color={colors.error} />
+          <Text style={{marginTop: 12, marginBottom: 8}}>
+            Something went wrong
+          </Text>
+          <Button mode="contained" onPress={refetch}>
+            Retry
+          </Button>
+        </View>
+      );
+    }
+
+    if (!transactions.length) {
+      return (
+        <View style={styles.centerContainer}>
+          <Icon name="receipt" size={32} color={colors.secondary} />
+          <Text style={{marginTop: 12}}>No transactions yet</Text>
+          <Text style={{fontSize: 12, color: colors.secondary}}>
+            Your transactions will appear here
+          </Text>
+        </View>
+      );
+    }
+
+    return (
       <FlatList
         data={transactions}
         keyExtractor={(item) => item.id.toString()}
@@ -135,8 +148,27 @@ export default function TransactionScreen() {
         }
         contentContainerStyle={styles.listContent}
       />
+    );
+  };
+
+  useEffect(() => {
+    if (fetchedData?.data) {
+      setTransactionData(fetchedData.data);
+    }
+  }, [fetchedData, setTransactionData]);
+
+  useEffect(() => {
+    if (needsRefetch) {
+      refetch();
+      setNeedsRefetch(false);
+    }
+  }, [needsRefetch, refetch, setNeedsRefetch]);
+
+  return (
+    <View style={styles.container}>
+      {renderContent()}
       <AddButton screenName="transactions" />
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -34,6 +34,12 @@ export default function TabLayout() {
       }}
       initialRouteName="transactions"
     >
+      <Tabs.Screen
+        name="index"
+        options={{
+          href: null, // Ini kuncinya: menyembunyikan dari bottom bar
+        }}
+      />
       {tabs.map(({name, title, icon}) => (
         <Tabs.Screen
           key={name}

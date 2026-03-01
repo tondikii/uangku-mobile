@@ -1,4 +1,4 @@
-import {useAuthStore} from "@/store/auth-store";
+import {useAuthStore} from "@/store/use-auth-store";
 import {GoogleSignin} from "@react-native-google-signin/google-signin";
 import {StyleSheet, View} from "react-native";
 import {Button, useTheme} from "react-native-paper";

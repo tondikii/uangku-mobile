@@ -31,15 +31,16 @@ export interface SignInResponse extends ApiResponse {
   };
 }
 
-export interface TransactionResponse {
-  statusCode: number;
-  success: boolean;
-  message: string;
+export interface TransactionsResponse extends ApiResponse {
   data: {
     data: Transaction[];
     summary: TransactionSummary;
     pagination: Pagination;
   };
+}
+
+export interface TransactionResponse extends ApiResponse {
+  data: Transaction;
 }
 
 export interface TransactionCategoriesResponse extends ApiResponse {

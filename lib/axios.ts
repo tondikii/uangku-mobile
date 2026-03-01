@@ -1,4 +1,4 @@
-import {useAuthStore} from "@/store/auth-store";
+import {useAuthStore} from "@/store/use-auth-store";
 import axios, {
   isAxiosError,
   type AxiosError,

@@ -1,7 +1,6 @@
+import {DatePicker, Dropdown} from "@/components/inputs";
 import React from "react";
 import {StyleSheet, View} from "react-native";
-import {DatePickerInput} from "react-native-paper-dates";
-import {Dropdown} from "react-native-paper-dropdown";
 import {FormState, TRANSFER_TYPE_ID} from "./constants";
 
 interface TransactionFieldsProps {
@@ -33,20 +32,16 @@ const TransactionFields = React.memo(
           <View style={styles.walletCol}>
             <Dropdown
               label="Wallet"
-              mode="outlined"
               value={form.walletId.toString()}
               onSelect={handleWalletChange}
               options={walletOptions}
             />
           </View>
           <View style={styles.dateCol}>
-            <DatePickerInput
-              locale="en"
+            <DatePicker
               label="Date"
               value={form.createdAt}
               onChange={handleDateChange}
-              inputMode="start"
-              mode="outlined"
             />
           </View>
         </View>
@@ -55,7 +50,6 @@ const TransactionFields = React.memo(
           <View style={styles.spacing}>
             <Dropdown
               label="Recipient Wallet"
-              mode="outlined"
               value={form.targetWalletId.toString()}
               onSelect={handleTargetWalletChange}
               options={targetWalletOptions}

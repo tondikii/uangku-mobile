@@ -1,5 +1,5 @@
 import {useColorScheme} from "@/hooks/use-color-scheme";
-import {useAuthStore} from "@/store/auth-store";
+import {useAuthStore} from "@/store/use-auth-store";
 import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,

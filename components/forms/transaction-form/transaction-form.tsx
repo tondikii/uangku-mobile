@@ -1,10 +1,21 @@
 import {useFetch} from "@/hooks/axios/use-fetch";
 import {useMutation} from "@/hooks/axios/use-mutation";
-import {MutationTransactionResponse, WalletsResponse} from "@/types";
-import {useRouter} from "expo-router";
-import React, {useCallback, useMemo, useRef, useState} from "react";
+import {useTransactionsStore} from "@/store/use-transactions-store";
+import {
+  MutationTransactionResponse,
+  TransactionResponse,
+  WalletsResponse,
+} from "@/types";
+import {Stack, useRouter} from "expo-router";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {ScrollView, StyleSheet, View} from "react-native";
-import {Modal, Portal, useTheme} from "react-native-paper";
+import {
+  ActivityIndicator,
+  Button,
+  Modal,
+  Portal,
+  useTheme,
+} from "react-native-paper";
 import {FormState, TRANSFER_TYPE_ID} from "./constants";
 import TransactionCategoryPicker from "./transaction-category-picker";
 import TransactionDisplay, {ActiveField} from "./transaction-display";
@@ -26,15 +37,50 @@ export default function TransactionForm({id}: {id?: string}) {
   const router = useRouter();
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  console.log("Form state:", form); // Debug log untuk melihat perubahan state form
   const [modalVisible, setModalVisible] = useState(false);
+
+  // Ref keeps the active field stable so handleKeyPress has zero deps.
+  const activeFieldRef = useRef<ActiveField>("amount");
+  const [activeFieldDisplay, setActiveFieldDisplay] =
+    useState<ActiveField>("amount");
+
+  const {setNeedsRefetch} = useTransactionsStore();
+
+  const {data: existingData, loading: loadingOldData} =
+    useFetch<TransactionResponse>(`/transactions/${id}`, {}, !id);
+
+  useEffect(() => {
+    console.log("Fetched existing transaction data:", existingData);
+    if (existingData) {
+      const d = existingData.data;
+      setForm({
+        transactionTypeId: d.transactionType.id,
+        transactionCategoryId: d.transactionCategory.id,
+        walletId: d.transactionWallets[0]?.wallet?.id || 0,
+        targetWalletId: d.transactionWallets[1]?.wallet?.id || 0,
+        amount: d.amount,
+        adminFee: d.adminFee,
+        createdAt: new Date(d.createdAt),
+      });
+      setModalVisible(true);
+    }
+  }, [existingData]);
 
   const {mutate: mutateTransaction, loading: loadingTransaction} = useMutation<
     MutationTransactionResponse,
     FormState
-  >("transactions", {
-    method: id ? "put" : "post",
+  >(id ? `transactions/${id}` : "transactions", {
+    method: id ? "patch" : "post",
     config: {params: id ? {id} : undefined},
   });
+
+  const {mutate: deleteTransaction, loading: loadingDelete} = useMutation(
+    `transactions/${id}`,
+    {
+      method: "delete",
+    },
+  );
 
   const {data} = useFetch<WalletsResponse>("wallets");
   const wallets = data?.data;
@@ -48,14 +94,6 @@ export default function TransactionForm({id}: {id?: string}) {
     () => walletOptions.filter((w) => Number(w.value) !== form.walletId),
     [walletOptions, form.walletId],
   );
-
-  // Ref keeps the active field stable so handleKeyPress has zero deps.
-  const activeFieldRef = useRef<ActiveField>("amount");
-  const [activeFieldDisplay, setActiveFieldDisplay] =
-    useState<ActiveField>("amount");
-
-  const isTransfer = form.transactionTypeId === TRANSFER_TYPE_ID;
-  const isEdit = !!id;
 
   const handleKeyPress = useCallback((val: string) => {
     setForm((prev) => {
@@ -75,6 +113,14 @@ export default function TransactionForm({id}: {id?: string}) {
     });
   }, []);
 
+  if (loadingOldData) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
   const handleFieldPress = (field: ActiveField) => {
     activeFieldRef.current = field;
     setActiveFieldDisplay(field);
@@ -85,6 +131,7 @@ export default function TransactionForm({id}: {id?: string}) {
   const handleSave = async () => {
     await mutateTransaction(form);
     setModalVisible(false);
+    setNeedsRefetch(true);
     router.back();
   };
 
@@ -102,11 +149,37 @@ export default function TransactionForm({id}: {id?: string}) {
     handleFieldPress("amount");
   };
 
+  const isTransfer = form.transactionTypeId === TRANSFER_TYPE_ID;
+  const isEdit = !!id;
+
   const saveDisabled =
     !form.amount || !form.walletId || (isTransfer && !form.targetWalletId);
 
+  const handleDelete = async () => {
+    // Tambahkan Alert.alert confirmation di sini
+    await deleteTransaction({});
+    setNeedsRefetch(true);
+    router.back();
+  };
+
   return (
     <View style={{flex: 1, backgroundColor: theme.colors.background}}>
+      <Stack.Screen
+        options={{
+          headerRight: () =>
+            id ? (
+              <Button
+                textColor={theme.colors.error}
+                onPress={handleDelete}
+                loading={loadingDelete}
+                disabled={!existingData}
+              >
+                Delete
+              </Button>
+            ) : null,
+        }}
+      />
+
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <TransactionCategoryPicker
           transactionTypeId={form.transactionTypeId}
@@ -158,6 +231,13 @@ export default function TransactionForm({id}: {id?: string}) {
 }
 
 const styles = StyleSheet.create({
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+
   scrollContainer: {padding: 16, paddingBottom: 60},
   modalContent: {
     marginTop: "auto",
