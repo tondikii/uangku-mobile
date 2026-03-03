@@ -44,7 +44,7 @@ export default function WalletsScreen() {
       );
     }
 
-    if (wallets.length) {
+    if (!wallets.length) {
       return (
         <View style={styles.centerContainer}>
           <Icon name="wallet" size={32} color={colors.secondary} />
