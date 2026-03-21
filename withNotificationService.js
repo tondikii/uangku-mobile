@@ -17,37 +17,24 @@ module.exports = function withNotificationService(config) {
       app.$["tools:replace"] = "android:allowBackup";
     }
 
-    // Inject NotificationListenerService for react-native-android-notification-listener.
-    // This library has no Expo config plugin so we must declare the service manually.
+    // Library already declares the service in its own AndroidManifest.xml.
+    // We only need to override the exported attribute to false using tools:replace.
     if (!app.service) app.service = [];
 
     const serviceExists = app.service.some(
       (s) =>
         s.$?.["android:name"] ===
-        "com.reactnativeandroidnotificationlistener.NotificationListenerService",
+        "com.lesimoes.androidnotificationlistener.RNAndroidNotificationListener",
     );
 
     if (!serviceExists) {
       app.service.push({
         $: {
           "android:name":
-            "com.reactnativeandroidnotificationlistener.NotificationListenerService",
-          "android:permission":
-            "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE",
+            "com.lesimoes.androidnotificationlistener.RNAndroidNotificationListener",
           "android:exported": "false",
+          "tools:replace": "android:exported",
         },
-        "intent-filter": [
-          {
-            action: [
-              {
-                $: {
-                  "android:name":
-                    "android.service.notification.NotificationListenerService",
-                },
-              },
-            ],
-          },
-        ],
       });
     }
 
