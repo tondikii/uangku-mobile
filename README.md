@@ -10,11 +10,7 @@
 
 ### 🎯 Problem Statement
 
-Indonesian users typically have money distributed across multiple platforms:
-
-- **Banks**: BCA, Mandiri, BRI
-- **E-wallets**: GoPay, OVO, Dana, Jago
-- **Other Services**: Shopee, SeaBank
+Indonesian users typically have money distributed across multiple platforms: BCA, Mandiri, BRI, GoPay, OVO, Dana, Jago, Shopee, SeaBank, and many more.
 
 Manually tracking balances and transactions across these platforms is tedious, error-prone, and time-consuming. UangKu solves this by intercepting transaction notifications in real-time and automatically recording them with a user-friendly confirmation workflow.
 
@@ -38,7 +34,7 @@ Manually tracking balances and transactions across these platforms is tedious, e
 - **State Management**: Zustand with persistence
 - **HTTP Client**: Axios with centralized configuration
 - **Authentication**: Google Sign-In + JWT tokens cached for headless tasks
-- **Local Storage**: AsyncStorage + SecureStore
+- **Local Storage**: SecureStore
 - **Icons**: MaterialCommunityIcons via @expo/vector-icons
 - **Charts**: react-native-gifted-charts
 - **Notifications**: react-native-android-notification-listener
@@ -172,10 +168,6 @@ uangku-mobile/
   - Authentication tokens
   - Pending transaction queue (from headless notification listener)
   - User credentials
-- **AsyncStorage** (Unencrypted): Reserved for non-sensitive data only
-  - UI preferences (theme, language, date format)
-  - User display preferences
-  - Cache metadata
 
 **Token Management**
 
@@ -188,7 +180,7 @@ uangku-mobile/
 - All transactions and wallet data stored remotely (server-side)
 - Local Zustand store acts as cache only
 - AuthStore persists minimal user metadata in SecureStore
-- Pending transactions queue stored in SecureStore (not AsyncStorage)
+- Pending transactions queue stored in SecureStore
 
 **API Security**
 
@@ -241,29 +233,15 @@ EXPO_PUBLIC_BASE_URL=https://your-server.com
 
 ### 📊 Supported Financial Apps
 
-The app automatically listens to notifications from:
+The app automatically listens to notifications from the apps defined in `SUPPORTED_APPS_LIST` (exported from `constants/supported-apps.ts`):
 
-**Banks**
+**Banks**: BCA mobile, livin, BRImo, wondr, Jago, SeaBank
 
-- BCA, BCA Mobile
-- Mandiri, Mandiri Mobile
-- BRI, BRI Mobile
-
-**E-wallets**
-
-- GoPay
-- OVO
-- Dana
-- Jago
-- LinkAja
-
-**Others**
-
-- SeaBank
-- Shopee
-- Mewallet
+**Wallets**: ShopeePay, GoPay, OVO, DANA
 
 Users can also add **Cash** as a manual wallet for non-digital funds.
+
+**Note**: To add or remove supported apps, update `SUPPORTED_APPS_LIST` and `SUPPORTED_APPS_CATEGORIZED` in `constants/supported-apps.ts`. Keep `ALLOWED_APPS_REGEX` in `services/NotificationService.ts` in sync with the correct app package names.
 
 ### 🔌 Notification Listener Requirements
 

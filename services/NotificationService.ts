@@ -1,38 +1,33 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from "expo-secure-store";
+import {ALLOWED_PACKAGES} from "@/constants/supported-apps";
+import {api} from "@/lib/axios";
+import * as Notifications from "expo-notifications";
 import {AppRegistry, Platform} from "react-native";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface ParsedNotification {
+  app: string;
+  title: string;
+  text: string;
+  date: string;
+}
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-// process.env is NOT reliably available in headless task context (app closed).
-// We use a hardcoded fallback. Keep this in sync with your .env file.
-// In production this will always be your real server URL anyway.
-const BASE_URL =
-  process.env.EXPO_PUBLIC_BASE_URL || "https://uangku-server.vercel.app";
-
-// Key used to cache the token in AsyncStorage for headless access.
-// Write this key whenever the user signs in, so headless can always read it.
-export const HEADLESS_TOKEN_KEY = "@uangku/headless_token";
-
-// ─── Allowlist ────────────────────────────────────────────────────────────────
-
-const ALLOWED_APPS_REGEX =
-  /jago|gojek|gopay|ovo\.id|id\.dana|shopee|bankbkemobile|seabank|sea\.bank|com\.bca|mybca|mandiri|livin|brimo|id\.co\.bri|src\.com\.bni|mewallet|linkaja/i;
+const NOTIFICATION_CHANNEL_ID = "uangku_transactions";
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
 
 const isNonTransactionNotification = (combined: string): boolean => {
   const lower = combined.toLowerCase();
 
-  // Must contain something that looks like a Rupiah amount
   const hasAmount =
     /(?:rp\.?|idr)\s*[\d.,]+/.test(lower) ||
     /sebesar\s+[\d.,]+/.test(lower) ||
     /\b\d{1,3}(?:\.\d{3})+\b/.test(lower);
 
-  if (!hasAmount) return true; // No amount = definitely not a transaction
+  if (!hasAmount) return true;
 
-  // OTP / verification codes
   if (
     /\botp\b|kode verifikasi|verification code|\bkode\b.{0,10}\d{4,8}/.test(
       lower,
@@ -40,10 +35,6 @@ const isNonTransactionNotification = (combined: string): boolean => {
   )
     return true;
 
-  // Fraud filter intentionally disabled — too aggressive, was blocking
-  // legitimate transaction notifications. The backend parsers handle filtering.
-
-  // Login / device alerts
   if (
     /login baru|masuk dari|perangkat baru|new (login|sign.?in|device)|signed in from/.test(
       lower,
@@ -54,63 +45,63 @@ const isNonTransactionNotification = (combined: string): boolean => {
   return false;
 };
 
-// ─── Token resolution ─────────────────────────────────────────────────────────
+// ─── Local Notification Trigger ───────────────────────────────────────────────
 
-/**
- * Tries two strategies to get the auth token:
- * 1. AsyncStorage (fast, reliable in headless context)
- * 2. SecureStore (fallback, may not work when app is fully closed)
- *
- * Call `cacheTokenForHeadless(token)` after every sign-in so strategy 1 always works.
- */
-const getToken = async (): Promise<string | null> => {
+const triggerConfirmationNotification = async (
+  payload: ParsedNotification,
+): Promise<void> => {
   try {
-    // Strategy 1: AsyncStorage cache — always works in headless
-    const cached = await AsyncStorage.getItem(HEADLESS_TOKEN_KEY);
-    if (cached) return cached;
-  } catch {}
+    const content: any = {
+      title: `Confirm: ${payload.app}`,
+      body: payload.title ? `${payload.title}\n${payload.text}` : payload.text,
+      data: {
+        type: "transaction_confirmation",
+        payload: JSON.stringify(payload),
+      },
+    };
 
-  try {
-    // Strategy 2: SecureStore fallback
-    const storeData = await SecureStore.getItemAsync("auth-store");
-    if (!storeData) return null;
-    const token = JSON.parse(storeData)?.state?.accessToken;
-    if (token) {
-      // Cache it for next time so strategy 1 works
-      await AsyncStorage.setItem(HEADLESS_TOKEN_KEY, token).catch(() => {});
+    // Add Android-specific configuration
+    if (Platform.OS === "android") {
+      content.android = {
+        channelId: NOTIFICATION_CHANNEL_ID,
+        allowWhileIdle: true,
+        priority: "high",
+      };
     }
-    return token ?? null;
-  } catch {
-    return null;
+
+    await Notifications.scheduleNotificationAsync({
+      content,
+      trigger: null, // Send immediately
+    });
+  } catch (error) {
+    console.error("Failed to trigger confirmation notification:", error);
   }
 };
 
-/**
- * Call this from your auth store/sign-in logic after receiving a token.
- * This ensures the headless task can always find the token even when the app is closed.
- *
- * Example — in your signin() function:
- *   import { cacheTokenForHeadless } from "@/services/NotificationService";
- *   cacheTokenForHeadless(accessToken);
- */
-export const cacheTokenForHeadless = async (token: string): Promise<void> => {
-  try {
-    await AsyncStorage.setItem(HEADLESS_TOKEN_KEY, token);
-  } catch {}
-};
+// ─── Action Handler ───────────────────────────────────────────────────────────
 
-/**
- * Call this on sign-out to clear the cached token.
- */
-export const clearHeadlessToken = async (): Promise<void> => {
+export const handleNotificationAction = async (
+  payload: ParsedNotification,
+): Promise<void> => {
   try {
-    await AsyncStorage.removeItem(HEADLESS_TOKEN_KEY);
-  } catch {}
+    await api.post("/notifications/sync", {
+      app: payload.app,
+      title: payload.title,
+      text: payload.text,
+      date: payload.date,
+    });
+  } catch (error) {
+    console.error("Failed to sync transaction notification:", error);
+    // Axios interceptors handle token refresh and 401 errors automatically
+    throw error;
+  }
 };
 
 // ─── Headless task ────────────────────────────────────────────────────────────
 
-const headlessNotificationListener = async ({notification}: any) => {
+const headlessNotificationListener = async ({
+  notification,
+}: any): Promise<void> => {
   if (!notification) return;
 
   let parsed: any;
@@ -121,10 +112,12 @@ const headlessNotificationListener = async ({notification}: any) => {
   }
 
   const appName: string = parsed.app?.toLowerCase() || "";
-  if (!ALLOWED_APPS_REGEX.test(appName)) return;
+  console.log("app name: ", appName);
+  console.log("title: ", parsed.title);
 
-  // Some apps (e.g. SeaBank) put the full message in bigText while text is empty.
-  // Use bigText as fallback so we don't miss these notifications.
+  const isAllowed = ALLOWED_PACKAGES.find((pkg) => appName === pkg);
+  if (!isAllowed) return;
+
   const text: string = parsed.text?.trim() || parsed.bigText?.trim() || "";
   const title: string = parsed.title?.trim() || "";
 
@@ -133,35 +126,19 @@ const headlessNotificationListener = async ({notification}: any) => {
   const combinedText = `${title} ${text}`;
   if (isNonTransactionNotification(combinedText)) return;
 
-  const token = await getToken();
-  if (!token) return; // User not logged in — nothing to do
+  // Prepare notification payload
+  const payload: ParsedNotification = {
+    app: parsed.app,
+    title,
+    text,
+    date: parsed.time
+      ? new Date(parseInt(parsed.time)).toISOString()
+      : new Date().toISOString(),
+  };
 
-  try {
-    const response = await fetch(`${BASE_URL}/notifications/sync`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        app: parsed.app,
-        title,
-        text,
-        date: parsed.time
-          ? new Date(parseInt(parsed.time)).toISOString()
-          : new Date().toISOString(),
-      }),
-    });
-
-    if (!response.ok) {
-      // If 401, the token is stale — clear the cache so we don't keep retrying
-      if (response.status === 401) {
-        await clearHeadlessToken();
-      }
-    }
-  } catch {
-    // Network error — silent fail, will retry on next notification
-  }
+  // Trigger local notification for user confirmation
+  // User must tap "Confirm" to execute the API call
+  await triggerConfirmationNotification(payload);
 };
 
 // ─── Registration ─────────────────────────────────────────────────────────────

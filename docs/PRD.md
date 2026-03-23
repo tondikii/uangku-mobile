@@ -29,7 +29,6 @@ To become the default financial dashboard for Indonesian users by automatically 
   - Use `@react-native-google-signin/google-signin` package
   - Store idToken and exchange for JWT accessToken on backend
   - Cache token in SecureStore (secure, persistent storage for sensitive data)
-  - **Note**: AsyncStorage is now reserved for non-sensitive data only (UI preferences, language, theme)
 - Acceptance: User can sign in/up in <30 seconds without password
 
 **Feature 2.1.2: New User Onboarding Flow**
@@ -252,10 +251,9 @@ To become the default financial dashboard for Indonesian users by automatically 
 
 **Section 3: Supported Apps**
 
-- Static list of all apps UangKu listens to (same as onboarding):
-  - Banks: BCA, Mandiri, BRI
-  - E-wallets: GoPay, OVO, Dana, Jago, etc.
-  - Others: Shopee, SeaBank, etc.
+- Categorized list of all apps UangKu listens to:
+  - **Banks**: BCA mobile, livin, BRImo, wondr, Jago, SeaBank
+  - **Wallets**: ShopeePay, GoPay, OVO, DANA
 - Note: "We never store your login credentials or payment info"
 
 **Section 4: Actions**
@@ -296,9 +294,18 @@ To become the default financial dashboard for Indonesian users by automatically 
 
 **Allowlist (ALLOWED_APPS_REGEX)**:
 
+The NotificationService listens to package names matching:
+
 ```regex
 /jago|gojek|gopay|ovo\.id|id\.dana|shopee|bankbkemobile|seabank|sea\.bank|com\.bca|mybca|mandiri|livin|brimo|id\.co\.bri|src\.com\.bni|mewallet|linkaja/i
 ```
+
+**Supported Apps** (User-facing):
+
+Defined in `SUPPORTED_APPS_LIST` export from `constants/supported-apps.ts`:
+BCA, BCA Mobile, Mandiri, BRI, BRI Mobile, BNI, GoPay, OVO, DANA, Jago, Mewallet, LinkAja, Shopee, SeaBank
+
+**Important**: To update the list of supported apps, modify `SUPPORTED_APPS_LIST` in `constants/supported-apps.ts`. Ensure `ALLOWED_APPS_REGEX` is kept in sync for proper notification package matching.
 
 **Filter Logic (isNonTransactionNotification)**:
 
@@ -337,8 +344,6 @@ To become the default financial dashboard for Indonesian users by automatically 
 
 **Token Caching for Headless**:
 
-**Deprecated**: AsyncStorage is no longer used for sensitive data.
-
 - Token stored in **SecureStore** (secure, persistent storage)
 - Updated whenever user signs in: `cacheTokenForHeadless(token)`
 - Cleared on logout: `clearHeadlessToken()`
@@ -346,7 +351,7 @@ To become the default financial dashboard for Indonesian users by automatically 
 
 **Pending Transactions Queue**:
 
-- Pending transactions stored in **SecureStore** (not AsyncStorage)
+- Pending transactions stored in **SecureStore**
 - Each pending record includes: app name, amount, parsed date, timestamp
 - Foreground Sync periodically checks SecureStore and syncs with backend
 - Cleared on successful API submission

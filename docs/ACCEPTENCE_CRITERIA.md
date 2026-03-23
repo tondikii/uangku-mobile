@@ -542,10 +542,9 @@ Then:
 
 When: Section 3 "Supported Apps" displays
 Then:
-  - Static list of all supported apps:
-    - Banks: BCA, Mandiri, BRI
-    - E-wallets: GoPay, OVO, Dana, Jago, LinkAja, Mewallet
-    - Others: Shopee, SeaBank
+  - Categorized list of all supported apps:
+    - Banks: BCA mobile, livin, BRImo, wondr, Jago, SeaBank
+    - Wallets: ShopeePay, GoPay, OVO, DANA
   - Note: "We never store your login credentials or payment info"
 
 When: Section 4 "Actions" displays
@@ -579,7 +578,7 @@ If user taps Cancel:
 If user taps Logout:
   - signout() called on useAuthStore
   - All local Zustand stores cleared
-  - Tokens cleared from SecureStore & AsyncStorage
+  - Tokens cleared from SecureStore
   - User redirected to /auth
   - On return to /auth: Should require new sign-in
 ```
@@ -1117,7 +1116,6 @@ Then:
 **Test**:
 
 - Sign in, note token
-- Manually delete token from AsyncStorage
 - Try to navigate to /transactions → should redirect to /auth
 
 ---
@@ -1128,7 +1126,6 @@ Then:
 Given: User signs in
 When: Token stored in SecureStore
 Then:
-  - Token NOT visible in plaintext in AsyncStorage (only cache key present)
   - Token NOT visible in app files/logs
   - Token cleared on logout
 ```

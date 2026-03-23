@@ -15,7 +15,6 @@
 - **API:** Axios (Centralized instance in `src/services/api.ts`).
 - **Icons:** MaterialCommunityIcons (via `@expo/vector-icons`).
 - **Secure Storage:** `expo-secure-store` for all sensitive data (tokens, pending transactions).
-- **General Storage:** AsyncStorage for UI preferences only (theme, language, non-sensitive cache).
 
 ## 🧠 Business Logic Rules
 
@@ -28,7 +27,6 @@
 
 2. **Storage Strategy (Strict):**
    - **SecureStore**: Auth tokens, pending transaction queue, sensitive user data
-   - **AsyncStorage**: UI preferences only (theme, language, non-sensitive cache)
    - **Zustand**: In-memory cache for fast access; persisted selectively with `persist` middleware
 
 3. **Auth Flow:**
@@ -46,6 +44,41 @@
 - **Expense:** `colors.error` (Red)
 - **Transfer:** `colors.tertiary` (Yellow)
 - **Components:** Reuse `transaction-form` and `wallet-form`. Do not duplicate form logic.
+
+## 📱 Screen-Specific Requirements
+
+### Profile Screen (`app/(tabs)/profile.tsx`)
+
+**Structure (Strict):**
+
+- **Section 1 (User Profile):** Avatar, name, email, "Joined Since" date
+- **Section 2 (Settings):** NotificationListenerToggle component (displays Secure-Sync status)
+- **Section 3 (About UangKu):** SupportedApps component (displays supported apps from `SUPPORTED_APPS_CATEGORIZED` exported by constants/supported-apps.ts)
+- **Section 4 (Account):** Logout action card
+- **Layout:** ScrollView wrapper for responsive behavior on small screens
+- **Visual Elements:** Section headers, Dividers between sections, consistent spacing
+
+**Logout Confirmation (AC 5.2):**
+
+- Dialog message: "Sign out from UangKu? You can always sign back in."
+- Buttons: Cancel (dismiss) and "Sign Out" (confirm)
+- Flow: revokeAccess() → signOut() → clearHeadlessToken() → signout()
+- Use Dialog + Portal from React Native Paper (do not use Alert)
+
+**SupportedApps Component:**
+
+- Import: `import {SupportedApps} from "@/components/ui";` and `import {SUPPORTED_APPS_CATEGORIZED} from "@/constants/supported-apps";`
+- Uses `SUPPORTED_APPS_CATEGORIZED` from `constants/supported-apps.ts` to display apps organized by category (Banks, Wallets, Market Places)
+- Shows disclaimer: "We never store your login credentials or payment info"
+- Reusable for Intro Screens (Wallet Checklist) if needed
+
+**Updating Supported Apps:**
+
+- To add/remove apps: Edit both `SUPPORTED_APPS_LIST` and `SUPPORTED_APPS_CATEGORIZED` in `constants/supported-apps.ts`
+- Update `ALLOWED_APPS_REGEX` in `services/NotificationService.ts` with matching app package names (in same order)
+- UI automatically reflects changes with proper categorization
+- Keep `ALLOWED_APPS_REGEX` in sync for notification package matching
+- Component automatically reflects changes (no code edits needed)
 
 ## ✍️ Coding Style
 

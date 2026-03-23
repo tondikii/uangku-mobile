@@ -15,14 +15,36 @@ import {
 
 import {darkTheme, lightTheme} from "@/constants/theme";
 import {GoogleSignin} from "@react-native-google-signin/google-signin";
+
+import {useAuthStore} from "@/store";
+import {en, registerTranslation} from "react-native-paper-dates";
+
+import * as Notifications from "expo-notifications";
+
 import "react-native-reanimated";
 
 // 👇 1. IMPORT SERVICE DI SINI (Paling atas setelah library)
 import "@/services/NotificationService";
-
-import {useAuthStore} from "@/store";
-import {en, registerTranslation} from "react-native-paper-dates";
 registerTranslation("en", en);
+
+// Configure notification channel for Android
+Notifications.setNotificationChannelAsync("uangku_transactions", {
+  name: "Transaction Confirmations",
+  importance: Notifications.AndroidImportance.HIGH,
+  vibrationPattern: [0, 250, 250, 250],
+  lightColor: "#FF231F7C",
+});
+
+// Set notification handler
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 // adapt navigation theme to match react-native-paper theme
 const {LightTheme, DarkTheme} = adaptNavigationTheme({
