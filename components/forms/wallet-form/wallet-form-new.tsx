@@ -2,20 +2,12 @@ import {Dropdown} from "@/components/inputs";
 import {LoadingState, Snackbar} from "@/components/ui";
 import {SUPPORTED_APPS_CONFIG} from "@/constants/supported-apps";
 import {useFetch, useMutation} from "@/hooks/axios";
-import {useTransactionsStore, useWalletsStore} from "@/store"; // Tambah store transaksi
+import {useWalletsStore} from "@/store";
 import {Wallet} from "@/types";
 import {Stack, useRouter} from "expo-router";
 import React, {FC, useCallback, useEffect, useMemo, useState} from "react";
 import {StyleSheet, View} from "react-native";
-import {
-  Button,
-  Dialog,
-  Portal,
-  Switch,
-  Text,
-  TextInput,
-  useTheme,
-} from "react-native-paper";
+import {Button, Switch, Text, TextInput, useTheme} from "react-native-paper";
 
 interface WalletFormProps {
   id?: string;
@@ -36,20 +28,19 @@ const WalletForm: FC<WalletFormProps> = ({id}) => {
   const router = useRouter();
   const isEdit = !!id;
 
-  // Store actions
+  // FIX: Pisahkan selector store untuk menghindari infinite loop & "getSnapshot" error
   const wallets = useWalletsStore((s) => s.wallets);
-  const setRefetchWallets = useWalletsStore((s) => s.setNeedsRefetch);
-  const setRefetchTransactions = useTransactionsStore((s) => s.setNeedsRefetch);
+  const setRefetch = useWalletsStore((s) => s.setNeedsRefetch);
 
   const [form, setForm] = useState({name: "", balance: "", appName: ""});
-  const [isSupported, setIsSupported] = useState(true);
+  const [isSupported, setIsSupported] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false); // State Dialog
 
   // ─── Options for Dropdown ──────────────────────────────────────────────────
   const appOptions = useMemo(() => {
     const filtered = SUPPORTED_APPS_CONFIG.filter((app) => {
       const alreadyUsed = wallets.find((w) => w.appName === app.name);
+      // Jika sedang edit, biarkan app yang sedang dipakai tetap muncul di list
       if (isEdit && form.appName === app.name) return true;
       return !alreadyUsed;
     });
@@ -73,13 +64,6 @@ const WalletForm: FC<WalletFormProps> = ({id}) => {
     method: isEdit ? "patch" : "post",
   });
 
-  // Mutation untuk delete
-  const {
-    mutate: deleteWallet,
-    loading: loadingDelete,
-    error: deleteError,
-  } = useMutation(`/wallets/${id}`, {method: "delete"});
-
   // Sync data saat mode Edit
   useEffect(() => {
     if (existingData?.data) {
@@ -93,12 +77,12 @@ const WalletForm: FC<WalletFormProps> = ({id}) => {
     }
   }, [existingData]);
 
-  // Handle error dari save maupun delete
+  // FIX: Gunakan setter langsung (bukan toggle) untuk menghindari loop pada error snackbar
   useEffect(() => {
-    if (saveError || deleteError) {
+    if (saveError) {
       setIsError(true);
     }
-  }, [saveError, deleteError]);
+  }, [saveError]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
   const handleAppSelect = useCallback((val?: string) => {
@@ -117,67 +101,26 @@ const WalletForm: FC<WalletFormProps> = ({id}) => {
         balance: parseBalance(form.balance),
         appName: isSupported ? form.appName : null,
       });
-      setRefetchWallets(true);
-      setRefetchTransactions(true); // Refetch transaksi juga
+      setRefetch(true);
       router.back();
     } catch {
-      // Error ditangani useEffect
+      // Error ditangani oleh useEffect di atas
     }
-  }, [
-    form,
-    isSupported,
-    mutateWallet,
-    router,
-    setRefetchWallets,
-    setRefetchTransactions,
-  ]);
-
-  const handleDeleteConfirm = useCallback(async () => {
-    setShowDeleteDialog(false);
-    try {
-      await deleteWallet({});
-      setRefetchWallets(true);
-      setRefetchTransactions(true);
-      router.back();
-    } catch {
-      // Error ditangani useEffect
-    }
-  }, [deleteWallet, router, setRefetchWallets, setRefetchTransactions]);
-
-  // ─── UI Helpers ────────────────────────────────────────────────────────────
-  const headerRight = useCallback(
-    () =>
-      isEdit ? (
-        <Button
-          textColor={colors.error}
-          onPress={() => setShowDeleteDialog(true)}
-          disabled={loadingDelete}
-          loading={loadingDelete}
-        >
-          Delete
-        </Button>
-      ) : null,
-    [isEdit, colors.error, loadingDelete],
-  );
+  }, [form, isSupported, mutateWallet, router, setRefetch]);
 
   if (loadingExisting) return <LoadingState />;
 
   const disabledSave = isSupported ? !form.appName : !form.name;
-  const activeError = saveError || deleteError;
 
   return (
     <View style={[styles.container, {backgroundColor: colors.background}]}>
-      <Stack.Screen
-        options={{
-          title: isEdit ? "Edit Wallet" : "New Wallet",
-          headerRight: headerRight, // Tambahkan tombol delete di header
-        }}
-      />
+      <Stack.Screen options={{title: isEdit ? "Edit Wallet" : "New Wallet"}} />
 
       <View style={styles.fields}>
+        {/* Toggle Integrasi (Sesuai request: Paling atas & simple) */}
         {!isEdit && (
           <View style={styles.row}>
-            <Text variant="labelLarge">Supported App</Text>
+            <Text variant="labelLarge">Supported App?</Text>
             <Switch
               value={isSupported}
               onValueChange={(val) => {
@@ -228,36 +171,11 @@ const WalletForm: FC<WalletFormProps> = ({id}) => {
         {isEdit ? "Update Wallet" : "Save Wallet"}
       </Button>
 
-      {/* Dialog Konfirmasi Delete */}
-      <Portal>
-        <Dialog
-          visible={showDeleteDialog}
-          onDismiss={() => setShowDeleteDialog(false)}
-        >
-          <Dialog.Icon icon="alert" color={colors.error} />
-          <Dialog.Title style={{textAlign: "center"}}>
-            Delete wallet?
-          </Dialog.Title>
-          <Dialog.Content>
-            <Text variant="bodyMedium">
-              This will permanently delete{" "}
-              <Text style={{fontWeight: "bold"}}>{form.name}</Text> and all its
-              transaction history. This cannot be undone.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowDeleteDialog(false)}>Cancel</Button>
-            <Button textColor={colors.error} onPress={handleDeleteConfirm}>
-              Delete
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
+      {/* Snackbar menggunakan setter isError(false) untuk tutup */}
       <Snackbar
         visible={isError}
         onDismiss={() => setIsError(false)}
-        text={activeError || "Terjadi kesalahan sistem"}
+        text={saveError || "Terjadi kesalahan sistem"}
       />
     </View>
   );

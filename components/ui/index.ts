@@ -3,6 +3,7 @@ export {default as Icon} from "./icon-fa6";
 export {default as NotificationListenerToggle} from "./notification-listener-toggle";
 export {default as ReportChart} from "./report-chart";
 export * from "./screen-state";
+export {default as Snackbar} from "./snackbar";
 export {default as SummaryCard} from "./summary-card";
 export {default as SupportedApps} from "./supported-apps";
 export {default as TransactionBadge} from "./transaction-badge";

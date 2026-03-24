@@ -6,6 +6,7 @@ export interface Wallet {
   balance: number;
   createdAt: string;
   updatedAt: string;
+  appName?: string;
   user: User;
 }
 

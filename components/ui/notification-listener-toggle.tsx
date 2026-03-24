@@ -24,8 +24,7 @@ export default function NotificationListenerToggle() {
     try {
       const status = await RNAndroidNotificationListener.getPermissionStatus();
       setIsEnabled(status === "authorized");
-    } catch (error) {
-      console.error("Error checking notification permission:", error);
+    } catch {
       setIsEnabled(false);
     }
   };
@@ -51,8 +50,7 @@ export default function NotificationListenerToggle() {
     try {
       RNAndroidNotificationListener.requestPermission();
       await checkPermission();
-    } catch (error) {
-      console.error("Error toggling notification permission:", error);
+    } catch {
       // Re-check to get actual permission state
       await checkPermission();
     } finally {

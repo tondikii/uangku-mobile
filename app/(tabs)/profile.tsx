@@ -1,5 +1,4 @@
 import {NotificationListenerToggle, SupportedApps} from "@/components/ui";
-import {clearHeadlessToken} from "@/services/NotificationService";
 import {useAuthStore} from "@/store";
 import {screenHeight} from "@/utils/common-utils";
 import {GoogleSignin} from "@react-native-google-signin/google-signin";
@@ -29,10 +28,7 @@ export default function ProfileScreen() {
       setShowLogoutDialog(false);
       await GoogleSignin.revokeAccess();
       await GoogleSignin.signOut();
-      await clearHeadlessToken();
       signout();
-    } catch (error) {
-      console.error("Logout error:", error);
     } finally {
       setLoading(false);
     }

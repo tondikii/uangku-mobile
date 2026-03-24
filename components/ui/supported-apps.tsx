@@ -7,7 +7,7 @@ import {Divider, Text, useTheme} from "react-native-paper";
  * SupportedApps
  *
  * Section 3: Supported Apps
- * Displays all supported financial apps categorized by type (Banks, Wallets, Market Places).
+ * Displays all supported financial apps categorized by type (Mobile Banking & E-Wallets).
  * Uses SUPPORTED_APPS_CATEGORIZED from constants (single source of truth).
  */
 export default function SupportedApps() {
@@ -42,7 +42,7 @@ export default function SupportedApps() {
                 {group.apps.map((app, appIndex) => (
                   <View key={appIndex} style={styles.appItem}>
                     <Text
-                      variant="bodySmall"
+                      variant="labelMedium"
                       style={{paddingVertical: 6, paddingLeft: 8}}
                     >
                       • {app}

@@ -879,25 +879,166 @@ BACKEND DEDUPLICATION (future enhancement):
 
 ---
 
-### AC 6.9: Pending Record Cleanup
+### AC 6.4-6.9: Removed (Simplified Architecture)
+
+Previous AC 6.4-6.9 covered a "pending transaction" flow where notifications were saved to SecureStore and user had to open confirmation screen.
+
+**This has been simplified to direct notification button actions** (see AC 6.10 below).
+
+No more:
+
+- ❌ Pending transaction storage in SecureStore
+- ❌ Confirmation screen (/transactions/confirm)
+- ❌ Foreground sync when app opens
+- ❌ ForegroundSyncService
+
+---
+
+### AC 6.10: Notification Action Buttons (Konfirmasi / Lewati)
+
+**Goal**: User can confirm or skip transaction directly from notification without opening the app.
 
 ```gherkin
-Given: Pending record in SecureStore
-When: App checks pending records
-And: Record is older than 24 hours
-And: User has NOT confirmed or skipped
+Given: Banking app sends notification with transaction amount
+When: Headless NotificationService receives notification
 Then:
-  - Foreground Sync auto-discards (removes from SecureStore)
-  - No confirmation screen shown for expired record
-  - Next pending record (if exists) shown instead
+  - Parse notification: extract app, title, text, amount
+  - Validate: Is app in ALLOWED_APP_NAMES? Is amount detected? Not OTP/login?
+  - Trigger LOCAL push notification with 2 action buttons:
+    * Button "Konfirmasi": Confirm and save transaction
+    * Button "Lewati": Dismiss and skip (no save)
+  - Store ALL transaction data in notification.data (for button actions)
+  - Use categoryIdentifier: "transaction_actions" to link buttons
+  - Task EXITS (no SecureStore pending, no API call yet)
+
+When: User taps "Konfirmasi" button on notification
+Then:
+  - Notification response listener activates (in app context or notification center)
+  - Listener extracts transaction data from notification.data
+  - Listener reads auth token from SecureStore (Zustand persist)
+  - Listener calls POST /notifications/sync with Bearer auth header
+  - Request body includes: app, title, text, date
+  - On success:
+    * Transaction saved to backend
+    * New transaction visible in /transactions list when app opened
+    * Notification auto-dismissed
+  - On error (401, network, etc.):
+    * Error logged to console
+    * Notification remains (user can retry)
+
+When: User taps "Lewati" button on notification
+Then:
+  - Notification dismissed
+  - No API call made
+  - No transaction created
+  - App state unchanged
+
+When: User opens UangKu app after confirming via button
+Then:
+  - App opens normally to active tab
+  - Confirmed transaction visible in /transactions list
+  - No pending records to clean up
+  - No confirmation screen shown
 ```
 
-**Test Case**:
+**Test Cases**:
 
-1. Manually create a pending record in SecureStore with outdated timestamp (>24 hours old)
-2. Open app
-3. Verify: Confirmation screen does NOT show the old pending record
-4. Verify: Old record removed from SecureStore
+1. **Confirm via notification button (app closed):**
+
+   ```
+   Test: User taps Konfirmasi button
+   Steps:
+     1. Kill app completely (swipe from recents)
+     2. Banking app sends notification: "BCA mobile - Dana masuk Rp 10.000"
+     3. Verify: Notification shows in notification center
+     4. Verify: Notification has two visible buttons: "Konfirmasi" + "Lewati"
+     5. Tap "Konfirmasi" button (app stays closed)
+   Expected:
+     - Console shows: "User confirmed transaction via notification button"
+     - Console shows: "Transaction confirmed and saved"
+     - POST /notifications/sync called with Bearer token
+     - Status 200 returned
+     - Notification dismissed
+   Verify after:
+     - Reopen app
+     - Check /transactions: New transaction Rp 10.000 visible immediately
+     - Amount correctly extracted and saved
+   ```
+
+2. **Skip via notification button:**
+
+   ```
+   Test: User taps Lewati button
+   Steps:
+     1. Kill app completely
+     2. Notification arrives: "GoPay - Dana masuk Rp 50.000"
+     3. Verify: Buttons visible
+     4. Tap "Lewati" button
+   Expected:
+     - Notification dismissed
+     - No console logs about confirmation
+     - No API call made
+   Verify after:
+     - Reopen app
+     - Check /transactions: No new Rp 50.000 transaction
+   ```
+
+3. **App in foreground, confirm via button:**
+
+   ```
+   Test: Notification button action while app is open
+   Steps:
+     1. App open on /transactions (foreground)
+     2. Notification arrives: "Dana - Transfer Rp 25.000"
+     3. Notification slides in from top (banner style)
+     4. Notification has buttons visible
+     5. Tap "Konfirmasi"
+   Expected:
+     - Button action triggers instantly
+     - POST /notifications/sync called immediately
+     - Transaction list updates with new transaction
+     - User sees Rp 25.000 appear in list (real-time)
+     - No navigation away from /transactions
+   ```
+
+4. **Amount extraction accuracy:**
+   ```
+   Test: Verify correct amount parsing for different formats
+   Banks:
+     - BCA: "Dana masuk sebesar Rp 100.000" → 100000
+     - Bank BKE: "Rp10.000 pada 23 Mar" → 10000
+     - GoPay: "Transfer Rp 50000" → 50000
+     - OVO: "Topup sebesar Rp 500.000" → 500000
+   Expected:
+     - All extracted amounts match actual transaction
+     - No incorrect decimal/thousands parsing
+     - Commas and dots handled correctly in both formats
+   ```
+
+**Security & Error Handling**:
+
+- ✅ Token must be present in SecureStore (user must be signed in)
+- ✅ If token invalid → API returns 401 → Error logged → Notification stays
+- ✅ Network error → Catch block → Error logged → Notification stays
+- ✅ User recovers by tapping button again or manually creating transaction
+- ✅ No sensitive data exposed in logs or notification body (only Rp amount + bank name)
+
+**Button Appearance (Android)**:
+
+- Both buttons visible in notification collapse/expand
+- "Konfirmasi" button appears first (primary action - green style recommended)
+- "Lewati" button appears second (destructive style - red/gray)
+- Buttons clickable even when notification is locked on lock screen
+- Buttons work from notification center or banner display
+
+**Security**:
+
+- Token from SecureStore (Zustand persist)
+- Authorization header: `Bearer {token}`
+- If token invalid: API returns 401, button action fails gracefully
+
+````
+
 
 ---
 
@@ -924,7 +1065,7 @@ Then:
   - API call sent
   - On success: Form closes, user returns to list
   - On error: Error message shown (e.g., "Network error, please retry")
-```
+````
 
 **Test Case**:
 
@@ -1195,6 +1336,10 @@ Run on every release candidate:
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: March 23, 2026  
+**Document Version**: 1.0
+**Last Updated**: March 23, 2026
 **Author**: UangKu Product & Engineering Team
+
+```
+
+```

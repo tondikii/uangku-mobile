@@ -345,8 +345,6 @@ BCA, BCA Mobile, Mandiri, BRI, BRI Mobile, BNI, GoPay, OVO, DANA, Jago, Mewallet
 **Token Caching for Headless**:
 
 - Token stored in **SecureStore** (secure, persistent storage)
-- Updated whenever user signs in: `cacheTokenForHeadless(token)`
-- Cleared on logout: `clearHeadlessToken()`
 - Reason: SecureStore provides proper encryption for authentication tokens
 
 **Pending Transactions Queue**:

@@ -7,7 +7,6 @@ import {
 import {Stack} from "expo-router";
 import {StatusBar} from "expo-status-bar";
 import React, {useEffect} from "react";
-import {AppState as RNAppState} from "react-native";
 import {PaperProvider, adaptNavigationTheme} from "react-native-paper";
 import {
   SafeAreaProvider,
@@ -15,41 +14,29 @@ import {
 } from "react-native-safe-area-context";
 
 import {darkTheme, lightTheme} from "@/constants/theme";
-import {GoogleSignin} from "@react-native-google-signin/google-signin";
-
 import {useAuthStore} from "@/store";
-import {en, registerTranslation} from "react-native-paper-dates";
-
+import {GoogleSignin} from "@react-native-google-signin/google-signin";
 import * as Notifications from "expo-notifications";
-
+import {en, registerTranslation} from "react-native-paper-dates";
 import "react-native-reanimated";
 
-// 👇 1. IMPORT SERVICE (top level)
-import {useForegroundSync} from "@/services/ForegroundSyncService";
-import "@/services/NotificationService";
+import {
+  handleNotificationActionFromButton,
+  setupNotificationCategories,
+  setupNotificationChannel,
+} from "@/services/NotificationService";
 
 registerTranslation("en", en);
 
-// Configure notification channel for Android
-Notifications.setNotificationChannelAsync("uangku_transactions", {
-  name: "Transaction Confirmations",
-  importance: Notifications.AndroidImportance.HIGH,
-  vibrationPattern: [0, 250, 250, 250],
-  lightColor: "#FF231F7C",
-});
-
-// Set notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
   }),
 });
 
-// adapt navigation theme to match react-native-paper theme
 const {LightTheme, DarkTheme} = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
   reactNavigationDark: NavigationDarkTheme,
@@ -58,31 +45,77 @@ const {LightTheme, DarkTheme} = adaptNavigationTheme({
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const {user} = useAuthStore();
-  const {checkAndSyncPending} = useForegroundSync();
 
+  // One-time app startup setup
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
       scopes: ["profile", "email"],
     });
+    setupNotificationChannel();
+    setupNotificationCategories();
   }, []);
 
-  // Listen for app state changes
+  // Request push notification permission once user is authenticated
   useEffect(() => {
-    const handleAppStateChange = async (nextAppState: string) => {
-      if (nextAppState === "active" && user) {
-        await checkAndSyncPending();
-      }
-    };
+    if (!user) return;
 
-    const subscription = RNAppState.addEventListener(
-      "change",
-      handleAppStateChange,
+    Notifications.requestPermissionsAsync();
+  }, [user]);
+
+  // Handle notification action button responses (Konfirmasi / Lewati)
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      async (response) => {
+        const {actionIdentifier, notification} = response;
+        const {data} = notification.request.content;
+        const identifier = notification.request.identifier;
+
+        // Ignore non-transaction notifications
+        if (data?.type !== "transaction_confirmation") return;
+
+        if (actionIdentifier === "confirm") {
+          try {
+            await handleNotificationActionFromButton(data, identifier);
+          } catch (error: any) {
+            const responseMessage = error?.response?.data?.message;
+            // NestJS message bisa berupa string atau array string
+            const errorCode = Array.isArray(responseMessage)
+              ? responseMessage[0]
+              : responseMessage;
+
+            let displayMessage = "Gagal memproses transaksi";
+
+            // Mapping Error Code ke Bahasa Indonesia yang User-Friendly
+            if (errorCode === "Wallet not found") {
+              const appLabel = data?.appLabel || data?.app || "terkait";
+              displayMessage = `Wallet untuk aplikasi ${appLabel} belum dibuat. Silakan buat wallet terkait untuk bisa membuat transaksi secara otomatis`;
+            } else if (error?.message) {
+              // Jika error dari network/auth, gunakan message aslinya
+              displayMessage = error.message;
+            }
+
+            // Tampilkan notifikasi error ke user
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: "Transaksi Gagal",
+                body: displayMessage,
+                // Kita tidak pakai subtitle/UangKu di sini agar fokus pada pesan error
+              },
+              trigger: null,
+            });
+          }
+        } else if (actionIdentifier === "skip") {
+          await Notifications.dismissNotificationAsync(identifier).catch(
+            () => {},
+          );
+        }
+      },
     );
-    return () => subscription.remove();
-  }, [user, checkAndSyncPending]);
 
-  // theme based on color scheme
+    return () => subscription.remove();
+  }, []);
+
   const isDark = colorScheme === "dark";
   const paperTheme = isDark ? darkTheme : lightTheme;
   const navigationTheme = isDark ? DarkTheme : LightTheme;
@@ -98,12 +131,7 @@ export default function RootLayout() {
 
             <Stack.Protected guard={Boolean(user)}>
               <Stack.Screen name="(tabs)" />
-              <Stack.Screen
-                name="modal"
-                options={{
-                  presentation: "modal",
-                }}
-              />
+              <Stack.Screen name="modal" options={{presentation: "modal"}} />
             </Stack.Protected>
           </Stack>
 

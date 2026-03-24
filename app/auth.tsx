@@ -1,7 +1,6 @@
 import {FinanceAppIllustration} from "@/components/illustrations";
 import {Icon} from "@/components/ui";
 import {useMutation} from "@/hooks/axios";
-import {cacheTokenForHeadless} from "@/services/NotificationService";
 import {useAuthStore} from "@/store";
 import {SignInResponse} from "@/types";
 import {screenWidth} from "@/utils/common-utils";
@@ -36,7 +35,6 @@ export default function AuthScreen() {
 
       const payload = {idToken: res.data?.idToken || ""};
       const data = await mutateSignin(payload);
-      await cacheTokenForHeadless(data?.data?.accessToken || "");
       signin(data);
     } finally {
       setLoading(false);

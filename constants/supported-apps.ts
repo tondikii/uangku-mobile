@@ -1,32 +1,32 @@
 export const SUPPORTED_APPS_CONFIG = [
-  // Banks
-  {label: "BCA mobile", packageName: "com.bca", category: "Banks"},
-  {label: "livin", packageName: "id.bmri.livin", category: "Banks"},
-  {label: "BRImo", packageName: "id.co.bri.brimo", category: "Banks"},
+  // Mobile Banking
+  {label: "BCA mobile", name: "com.bca", category: "Mobile Banking"},
+  {label: "livin", name: "id.bmri.livin", category: "Mobile Banking"},
+  {label: "BRImo", name: "id.co.bri.brimo", category: "Mobile Banking"},
   {
     label: "wondr",
-    packageName: "id.bni.wondr",
-    category: "Banks",
+    name: "id.bni.wondr",
+    category: "Mobile Banking",
   },
-  {label: "Jago", packageName: "com.jago.digitalBanking", category: "Banks"},
+  {label: "Jago", name: "com.jago.digitalbanking", category: "Mobile Banking"},
   {
     label: "SeaBank",
-    packageName: "id.co.bankbkemobile.digitalbank",
-    category: "Banks",
+    name: "id.co.bankbkemobile.digitalbank",
+    category: "Mobile Banking",
   },
 
-  // Wallets
-  {label: "ShopeePay", packageName: "com.shopeepay.id", category: "Wallets"},
-  {label: "GoPay", packageName: "com.gojek.gopay", category: "Wallets"},
-  {label: "OVO", packageName: "ovo.id", category: "Wallets"},
-  {label: "DANA", packageName: "id.dana", category: "Wallets"},
+  // E-Wallets
+  {label: "ShopeePay", name: "com.shopeepay.id", category: "E-Wallets"},
+  {label: "GoPay", name: "com.gojek.gopay", category: "E-Wallets"},
+  {label: "OVO", name: "ovo.id", category: "E-Wallets"},
+  {label: "DANA", name: "id.dana", category: "E-Wallets"},
 ];
 
 export const SUPPORTED_APPS_LIST = SUPPORTED_APPS_CONFIG.map(
   (app) => app.label,
 );
 
-const categories = ["Banks", "Wallets", "Market Places"] as const;
+const categories = ["Mobile Banking", "E-Wallets"] as const;
 
 export const SUPPORTED_APPS_CATEGORIZED = categories.map((cat) => ({
   category: cat,
@@ -35,6 +35,4 @@ export const SUPPORTED_APPS_CATEGORIZED = categories.map((cat) => ({
   ),
 }));
 
-export const ALLOWED_PACKAGES = SUPPORTED_APPS_CONFIG.map(
-  (app) => app.packageName,
-);
+export const ALLOWED_APP_NAMES = SUPPORTED_APPS_CONFIG.map((app) => app.name);

@@ -62,13 +62,13 @@
 
 - Dialog message: "Sign out from UangKu? You can always sign back in."
 - Buttons: Cancel (dismiss) and "Sign Out" (confirm)
-- Flow: revokeAccess() → signOut() → clearHeadlessToken() → signout()
+- Flow: revokeAccess() → signOut()
 - Use Dialog + Portal from React Native Paper (do not use Alert)
 
 **SupportedApps Component:**
 
 - Import: `import {SupportedApps} from "@/components/ui";` and `import {SUPPORTED_APPS_CATEGORIZED} from "@/constants/supported-apps";`
-- Uses `SUPPORTED_APPS_CATEGORIZED` from `constants/supported-apps.ts` to display apps organized by category (Banks, Wallets, Market Places)
+- Uses `SUPPORTED_APPS_CATEGORIZED` from `constants/supported-apps.ts` to display apps organized by category (Mobile Banking & E-Wallets)
 - Shows disclaimer: "We never store your login credentials or payment info"
 - Reusable for Intro Screens (Wallet Checklist) if needed
 
