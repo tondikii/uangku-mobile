@@ -33,44 +33,55 @@ To become the default financial dashboard for Indonesian users by automatically 
 
 **Feature 2.1.2: New User Onboarding Flow**
 
-- Requirement: Introduce UangKu's value to new users
+- Requirement: Introduce UangKu's value to new users and obtain consent
 
 **Step 1 – Introduction Screen**
 
-- Design: Minimalist, single illustration
+- Design: Minimalist, three feature highlight cards + app logo
 - Content:
-  - Headline: "Manage all your money in one place"
-  - Subtitle: "See your balance across all banks and e-wallets instantly"
-  - CTA: "Get Started" button
-- Acceptance: Screen loads in <2 seconds
+  - Headline: "Kelola uangmu dengan UangKu"
+  - Feature cards: Notifikasi Otomatis, Semua Dompet Satu Tempat, Laporan Bulanan
+  - Privacy Policy checkbox (required before proceeding)
+  - CTA: "Mulai Sekarang" button (disabled until Privacy Policy accepted)
+  - Privacy Policy: scrollable dialog with pseudonymization, notification scope, data security, account deletion sections
+- Acceptance: Screen loads in <2 seconds; "Mulai Sekarang" only enabled after checkbox ticked
 
 **Step 2 – Permission Request**
 
-- Design: OS-level permission dialog (Android: NotificationListenerService only — iOS not supported)
+- Design: Illustration + bullet point list explaining notification access scope
 - Content:
-  - "UangKu needs access to your notifications to track transactions automatically"
-  - "You control which apps we listen to"
-- Acceptance: Permission granted → proceed to Wallet Checklist; denied → skip to Transaction List (limited functionality)
+  - "UangKu butuh izin ini untuk mencatat transaksimu otomatis"
+  - Bullet points: reads banking/e-wallet notifications only; does not read OTP or personal messages; permission revocable anytime
+  - Primary CTA: "Izinkan Akses"
+  - Secondary CTA: "Lewati, input manual saja" (skips to main app)
+- Behavior:
+  - If permission granted → navigate to `/onboarding/wallets`
+  - If permission denied or status not "authorized" after 2s → `completeOnboarding()` (goes to main app with limited functionality)
+  - If user taps Skip → `completeOnboarding()` immediately
+- Acceptance: Permission granted → proceed to Wallet Checklist; denied or skipped → main app
 
 **Step 3 – Wallet Checklist**
 
-- Design: ScrollView list of supported apps with toggle switches
+- Design: Scrollable list of supported apps with checkboxes
 - Data:
-  - Pre-populated list from ALLOWED_APPS_REGEX (Jago, GoPay, OVO, Dana, BCA, Mandiri, BRI, SeaBank, Shopee, Mewallet, etc.)
-  - Plus "Cash" option for manual tracking
+  - Pre-populated from `SUPPORTED_APPS_CONFIG` (10 apps)
+  - Plus "Cash" option for manual tracking (always first in list)
 - Action: For each selected app:
-  - Show input field: "Initial Balance (Rp)"
-  - Create wallet with entered balance
+  - Show input field: "Saldo awal" (formatted in Indonesian locale, Rp prefix)
+  - Create wallet via `POST /wallets` on continue
+- Footer behavior:
+  - "Lanjutkan" button: enabled only when ≥1 wallet selected
+  - "Lewati untuk sekarang" text button: visible only when no wallet is selected
 - Acceptance:
-  - User selects 2+ wallets → all created with balances
-  - User can skip this step → defaults to empty wallets list
+  - User selects wallets → all created with initial balances on "Lanjutkan"
+  - User can skip entirely → `completeOnboarding()` with empty wallets list
 
 **Feature 2.1.3: Existing User Login**
 
 - Requirement: Quick sign-in for returning users
 - Implementation:
   - Google sign-in only (no separate email/password)
-  - Check if user exists (backend returns user metadata)
+  - Check if user exists (backend returns `isNewUser` flag)
   - If exists: Navigate to Transaction List
   - If new: Show onboarding flow
 - Acceptance: <5 second sign-in for existing user with cached credentials
@@ -85,7 +96,7 @@ To become the default financial dashboard for Indonesian users by automatically 
 
 **Header Section**
 
-- **Total Balance**: Sum of all wallet balances (green, large font)
+- **Total Balance**: Sum of all wallet balances
   - Formula: SUM(all active wallets' balances)
   - Auto-updates when transactions are approved
 - **Income & Expense Cards** (below total):
@@ -112,7 +123,6 @@ To become the default financial dashboard for Indonesian users by automatically 
   - Description: "Cafe / GoPay" or "Salary / BCA"
   - Amount: "+Rp 500.000" (green) or "-Rp 50.000" (red)
   - Time: "10:30 AM"
-- **Swipe Actions**: (Future) Delete/Edit
 - **Tap Action**: Navigate to TransactionDetail screen
 
 **Acceptance Criteria**:
@@ -127,12 +137,12 @@ To become the default financial dashboard for Indonesian users by automatically 
 - Flow:
   1. Tap "+" FAB button
   2. Navigate to `/transactions/add`
-  3. TransactionForm component pre-fills:
+  3. TransactionForm pre-fills:
      - Transaction Type: "Expense" (default)
      - Amount: 0
      - Wallet: First wallet (user can change)
      - Date: Today
-     - Category: "Uncategorized" (user must select)
+     - Category: unselected (user must assign)
   4. User fills in amount, category, optional note
   5. Tap "Save"
   6. Transaction created, return to list
@@ -164,16 +174,10 @@ To become the default financial dashboard for Indonesian users by automatically 
 - Requirement: Display all user wallets with balances
 - Screen: `/wallets`
 - Display:
-  - Each wallet card shows:
-    - App/bank icon (e.g., GoPay logo)
-    - Wallet name (e.g., "GoPay Account")
-    - Current balance (e.g., "Rp 1.250.000")
-    - Last updated time (e.g., "Updated 2 hours ago")
-  - Total balance in header (same as transaction list)
+  - Each wallet card: wallet name, current balance, last updated timestamp
+  - Total balance in header
 - FAB: "+ Add Wallet"
-- Acceptance:
-  - <1 second load time
-  - Balances reflect latest transactions immediately
+- Acceptance: <1 second load time; balances reflect latest transactions immediately
 
 **Feature 2.3.2: Create/Edit Wallet (WalletForm)**
 
@@ -183,7 +187,6 @@ To become the default financial dashboard for Indonesian users by automatically 
   - **Balance**: Number input with Indonesian formatting (e.g., "2.500.000")
     - Auto-formats as user types
     - Parses to pure number on submit
-  - (Optional in future) **Wallet Type**: Dropdown (Bank, E-Wallet, Cash)
 - Validation:
   - Name: Required, max 50 characters
   - Balance: Required, must be numeric, ≥ 0
@@ -200,10 +203,9 @@ To become the default financial dashboard for Indonesian users by automatically 
 - Display:
   - Wallet name, icon, balance
   - Transaction history filtered to this wallet only
-  - Date picker to filter by date range
 - Actions:
   - Edit: Opens WalletForm
-  - Delete: Confirmation → removes wallet (optional: soft delete if transactions exist)
+  - Delete: Confirmation → removes wallet
 - Acceptance: <500ms load
 
 ---
@@ -218,16 +220,14 @@ To become the default financial dashboard for Indonesian users by automatically 
   - **Bar Chart**: Side-by-side bars for each month (last 12 months)
     - Blue: Income
     - Red: Expense
-    - Y-axis: Rupiah amount
   - **Month/Year Selector**: Dropdown to pick specific month
   - **Summary Cards**:
     - Total Income (green)
     - Total Expense (red)
-    - Net Balance (white/neutral, can be + or -)
+    - Net Balance (can be + or -)
 - Acceptance:
   - Chart renders in <1 second
   - Data updates reflect latest transactions within 500ms
-  - Supports dragging to zoom (nice-to-have)
 
 ---
 
@@ -236,24 +236,22 @@ To become the default financial dashboard for Indonesian users by automatically 
 **Feature 2.5.1: User Profile**
 
 - Requirement: Display user information and manage settings
-- Screen: `/profile`
+- Screen: `/settings`
 - Display:
   - Google profile photo (circular avatar)
   - User name from Google account
-  - Email
 
 **Section 2: Notification Settings**
 
 - Toggle: "Enable Notification Listening"
   - On: App intercepts transactions from supported apps
   - Off: No automatic transaction creation
-- Explanation: "UangKu will send you a notification to confirm each transaction"
 
 **Section 3: Supported Apps**
 
 - Categorized list of all apps UangKu listens to:
-  - **Banks**: BCA mobile, livin, BRImo, wondr, Jago, SeaBank
-  - **Wallets**: ShopeePay, GoPay, OVO, DANA
+  - **M-Banking**: BCA mobile, livin, BRImo, wondr, Jago, SeaBank
+  - **E-Wallet**: ShopeePay, GoPay, OVO, DANA
 - Note: "We never store your login credentials or payment info"
 
 **Section 4: Actions**
@@ -268,131 +266,92 @@ To become the default financial dashboard for Indonesian users by automatically 
 
 #### 2.6 Notification Listener Service (THE USP)
 
-**Feature 2.6.1: Headless Notification Interception (Secure-Sync Architecture)**
+**Feature 2.6.1: Headless Notification Interception (Action Button Architecture)**
 
-- Requirement: Listen to transaction notifications even when app is closed, with secure background processing
+- Requirement: Listen to transaction notifications even when app is closed, and allow one-tap confirmation directly from the notification
 
-**Architecture – No Direct API from Headless**:
+**Architecture – Action Buttons, No Pending Queue**:
 
 ```
 1. OS sends notification → NotificationService.ts (headless task)
-2. Task checks if app matches ALLOWED_APPS_REGEX
-3. If match, parse title + text for amount
+2. Task checks if app is in ALLOWED_APP_NAMES (exact package name match)
+3. If match, parse title + text for amount via TransactionParser
 4. Filter out non-transaction notifications (OTP, login alerts)
-5. Save parsed data as "Pending" record in SecureStore
-6. Trigger a local push notification to user
-   (e.g., "GoPay: Confirm Rp 50.000 debit?")
-7. STOP – Do NOT call backend API from headless task
+5. Schedule local push notification with two action buttons:
+   - "Konfirmasi"
+   - "Lewati"
+   All parsed data embedded in notification.data
+6. STOP – Task ends (no SecureStore pending, no API call)
 
-[Later, when app is in Foreground]
-8. Foreground Sync service fetches pending records from SecureStore
-9. Sends API request to backend with verified auth token (from Zustand)
-10. User navigates to dedicated Confirmation Screen
-11. User verifies amount, wallet, assigns category
-12. Final POST /transactions sent
+[User taps "Konfirmasi" button — app can be closed]
+7. handler.ts activates (background task: BACKGROUND-TRANSACTION-ACTION)
+8. Reads auth token from SecureStore
+9. Calls POST /notifications/sync with Bearer token
+10. On success: notification auto-dismissed, transaction visible in app
+11. On error (401/network): notification remains for retry
+
+[User taps "Lewati" button]
+7. Notification dismissed
+8. No API call, no transaction created
 ```
 
-**Allowlist (ALLOWED_APPS_REGEX)**:
+**Allowlist (`ALLOWED_APP_NAMES`)** — derived from `constants/supported-apps.ts`:
 
-The NotificationService listens to package names matching:
-
-```regex
-/jago|gojek|gopay|ovo\.id|id\.dana|shopee|bankbkemobile|seabank|sea\.bank|com\.bca|mybca|mandiri|livin|brimo|id\.co\.bri|src\.com\.bni|mewallet|linkaja/i
+```
+com.bca | id.bmri.livin | id.co.bri.brimo | id.bni.wondr |
+com.jago.digitalbanking | id.co.bankbkemobile.digitalbank |
+com.shopeepay.id | com.gojek.gopay | ovo.id | id.dana
 ```
 
-**Supported Apps** (User-facing):
+Matching is **exact** (lowercase string comparison), not regex.
 
-Defined in `SUPPORTED_APPS_LIST` export from `constants/supported-apps.ts`:
-BCA, BCA Mobile, Mandiri, BRI, BRI Mobile, BNI, GoPay, OVO, DANA, Jago, Mewallet, LinkAja, Shopee, SeaBank
+**Supported Apps** (User-facing) — from `SUPPORTED_APPS_CONFIG`:
 
-**Important**: To update the list of supported apps, modify `SUPPORTED_APPS_LIST` in `constants/supported-apps.ts`. Ensure `ALLOWED_APPS_REGEX` is kept in sync for proper notification package matching.
+M-Banking: BCA mobile, livin, BRImo, wondr, Jago, SeaBank  
+E-Wallet: ShopeePay, GoPay, OVO, DANA
 
-**Filter Logic (isNonTransactionNotification)**:
+**Important**: To add or remove supported apps, update `SUPPORTED_APPS_CONFIG` in `constants/supported-apps.ts`. `ALLOWED_APP_NAMES` is derived automatically — no separate regex to maintain.
 
-- **Must contain amount**: Regex looks for "Rp", "IDR", "sebesar", or number patterns
+**Filter Logic (`TransactionParser.isNonTransaction()`)**:
+
+- **Must contain amount**: Looks for "Rp", "IDR", "sebesar", or number patterns
 - **Exclude OTP**: If text contains "otp", "kode verifikasi", "verification code"
 - **Exclude login alerts**: If text contains "login baru", "masuk dari", "perangkat baru"
-- **Acceptance**: <100ms parsing time, <1% false positives
+- **Acceptance**: <100ms parsing time
 
-**CRITICAL: Confirmation-Based Flow (with Dedicated Screen)**
+**Notification Content**:
 
-**Background Task** (Headless Service):
+- Title: `+Rp 10.000` (income) or `-Rp 50.000` (expense) — formatted in Indonesian locale
+- Body: original notification text
+- Category: `transaction_actions` (links Konfirmasi/Lewati buttons)
+- Data payload: app, appLabel, title, text, date (ISO), amount, transactionTypeId
 
-1. **Parse Notification**: Extract app, title, text, amount
-2. **Save as Pending**: Store in SecureStore with timestamp and parsed data
-3. **Trigger Local Push**: Send a local push notification to user
-   ```
-   "GoPay: Confirm Rp 50.000 debit?"
-   [Open App]
-   ```
-4. **Do NOT hit backend**: Headless task ends here (no API calls)
+**Token Handling**:
 
-**Foreground (When App is Open/Resumed)**:
+- Token stored in **SecureStore** (`@uangku/headless_token`)
+- Read directly by the notification response handler at button-tap time
+- If token missing or expired → API returns 401 → error logged → notification stays (user can retry)
 
-5. **App initializes Foreground Sync**: Checks SecureStore for pending transactions
-6. **Auto-navigate to Confirmation Screen**: If pending records exist, navigate user to `/transactions/confirm`
-7. **User Verification & Category Assignment**:
-   - Display: App name, amount, wallet name (auto-matched from available wallets)
-   - User can modify wallet selection
-   - User assigns Category (Groceries, Transport, Food, etc. — NOT pre-filled)
-   - User adds optional Note
-8. **Final Submission**:
-   - On "Confirm": POST /transactions sent with user-assigned category
-   - On "Skip": Remove from pending, discard
-9. **Cleanup**: Delete from SecureStore on success
-10. **Fallback**: If pending records older than 24 hours and not confirmed, auto-discard
+**Acceptance Criteria**:
 
-**Token Caching for Headless**:
-
-- Token stored in **SecureStore** (secure, persistent storage)
-- Reason: SecureStore provides proper encryption for authentication tokens
-
-**Pending Transactions Queue**:
-
-- Pending transactions stored in **SecureStore**
-- Each pending record includes: app name, amount, parsed date, timestamp
-- Foreground Sync periodically checks SecureStore and syncs with backend
-- Cleared on successful API submission
-
-**Auto-Parsing Categories**:
-
-- Notifications no longer auto-fit into a "Notification" category
-- Instead, user assigns Category manually on the Confirmation Screen (Groceries, Transport, Food, etc.)
-- Note field preserves original notification text for audit trail
-- This gives users full control and prevents miscategorization
-
-- **Acceptance Criteria**:
-  - Headless task completes before notification disappears from OS queue
-  - Local push sent within 2 seconds of original notification
-  - App launches with Foreground Sync checking for pending records
-  - Confirmation Screen loads with pre-populated amount, wallet, date, time
-  - User can modify wallet and category before submission
-  - No duplicates (check for identical transaction within 5 minutes)
-  - Token always available in SecureStore (test: kill app, receive notification, task still runs)
+- Headless task completes before notification disappears from OS queue
+- Local push sent within 2 seconds of original notification
+- Action buttons visible in notification center and on lock screen
+- Tapping "Konfirmasi" creates transaction without opening the app
+- No duplicate pending records (transaction data lives in notification.data only)
+- Token read from SecureStore at confirmation time, not cached in headless context
 
 ---
 
 #### 2.7 Color & Theme System
 
-**Income Transactions**:
+**Income Transactions**: `colors.primary` (Green)
 
-- Color: `colors.primary` (Green, #2E7D32)
-- Badge, icon, text all use primary
+**Expense Transactions**: `colors.error` (Red)
 
-**Expense Transactions**:
+**Transfer Transactions**: `colors.tertiary` (Yellow)
 
-- Color: `colors.error` (Red, #D32F2F)
-- Badge, icon, text all use error
-
-**Transfer Transactions**:
-
-- Color: `colors.tertiary` (Yellow, #FBC02D)
-- Badge, icon, text all use tertiary
-
-**Dark Mode**:
-
-- Auto-detect from system settings
-- Override in profile (future feature)
+**Dark Mode**: Auto-detect from system settings
 
 ---
 
@@ -405,17 +364,15 @@ BCA, BCA Mobile, Mandiri, BRI, BRI Mobile, BNI, GoPay, OVO, DANA, Jago, Mewallet
   ↓
 [Google Sign-In]
   ↓
-(Backend checks if user exists)
+(Backend checks if user exists → isNewUser: true)
   ↓
-[User is NEW]
+[Introduction Screen] → agree to Privacy Policy → "Mulai Sekarang"
   ↓
-[Introduction Screen] → "Get Started"
+[Permission Screen] → "Izinkan Akses" / "Lewati"
   ↓
-[Permission Screen] → Allow/Skip
+[Wallet Checklist] → select apps & enter initial balances → "Lanjutkan" / "Lewati untuk sekarang"
   ↓
-[Wallet Checklist] → Select & add initial balances
-  ↓
-[Main App] → Transaction List (empty)
+[Main App] → Transaction List
 ```
 
 #### 3.2 Existing User Flow
@@ -425,9 +382,7 @@ BCA, BCA Mobile, Mandiri, BRI, BRI Mobile, BNI, GoPay, OVO, DANA, Jago, Mewallet
   ↓
 [Google Sign-In]
   ↓
-(Backend checks if user exists)
-  ↓
-[User EXISTS]
+(Backend checks if user exists → isNewUser: false)
   ↓
 [Main App] → Transaction List (with history)
 ```
@@ -435,18 +390,21 @@ BCA, BCA Mobile, Mandiri, BRI, BRI Mobile, BNI, GoPay, OVO, DANA, Jago, Mewallet
 #### 3.3 Notification Confirmation Flow
 
 ```
-[User receives notification from supported app]
+[Transaction notification arrives from supported app]
   ↓
-[Headless task parses notification]
+[Headless task: check ALLOWED_APP_NAMES]
   ↓
-[Check: Amount + no OTP/login alert?]
+[Parse amount → filter OTP/login alerts]
   ↓
-[YES] → Send confirmation push to user
+[Schedule local push with "Konfirmasi" + "Lewati" buttons]
   ↓
-[User sees: "Confirm: Wallet – Amount?"]
+[User taps "Konfirmasi"]              [User taps "Lewati"]
+  ↓                                      ↓
+[handler reads token from SecureStore]  [Notification dismissed]
+  ↓                                      ↓
+[POST /notifications/sync]             [No transaction created]
   ↓
-[APPROVE] → Create transaction, redirect to transaction detail (optional)
-[SKIP] → Discard, no transaction created
+[Transaction saved → notification dismissed]
 ```
 
 ---
@@ -497,19 +455,12 @@ Response: { "id": 1, ... }
 
 ```json
 Request: {
-  "app": "gopay",
+  "app": "com.gojek.gopay",
   "title": "GoPay Debit",
   "text": "Rp 50.000 from GoPay",
-  "date": 1711270800000
+  "date": "2024-03-23T14:30:00.000Z"
 }
-Response: { "transactionId": null, "status": "confirmation_pending" }
-```
-
-**POST `/notifications/confirm`**
-
-```json
-Request: { "notificationId": "uuid", "approved": true }
-Response: { "transactionId": 1 } OR { "status": "skipped" }
+Response: { "transactionId": 1, "status": "confirmed" }
 ```
 
 #### 4.2 Data Models
@@ -553,6 +504,17 @@ interface Transaction {
   importSource: string; // 'notification' | 'manual'
   createdAt: string;
   updatedAt: string;
+}
+```
+
+**TransactionsStore State**
+
+```typescript
+interface TransactionState {
+  selectedDate: Date;
+  transactions: Transaction[];
+  summary: TransactionSummary | undefined;
+  needsRefetch: boolean;
 }
 ```
 

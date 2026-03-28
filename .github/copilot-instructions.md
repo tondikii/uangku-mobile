@@ -35,7 +35,7 @@
    - Token stored in SecureStore, read into Zustand on app start.
 
 4. **Wallet Logic:**
-   - Use `ALLOWED_APPS_REGEX` to filter which notifications to parse.
+   - Use `ALLOWED_APP_NAMES` to filter which notifications to parse.
    - Total Balance in headers must always be a derived state from all active wallets.
 
 ## 🎨 Design System (Strict)
@@ -75,9 +75,9 @@
 **Updating Supported Apps:**
 
 - To add/remove apps: Edit both `SUPPORTED_APPS_LIST` and `SUPPORTED_APPS_CATEGORIZED` in `constants/supported-apps.ts`
-- Update `ALLOWED_APPS_REGEX` in `services/notification/notification-service.ts` with matching app package names (in same order)
+- Update `ALLOWED_APP_NAMES` in `services/notification/notification-service.ts` with matching app package names (in same order)
 - UI automatically reflects changes with proper categorization
-- Keep `ALLOWED_APPS_REGEX` in sync for notification package matching
+- Keep `ALLOWED_APP_NAMES` in sync for notification package matching
 - Component automatically reflects changes (no code edits needed)
 
 ## ✍️ Coding Style
@@ -90,7 +90,7 @@
 ## 💡 Copilot Behavior
 
 - When suggesting UI, prioritize **React Native Paper** components.
-- When suggesting logic for the `NotificationListener`, refer to the `ALLOWED_APPS_REGEX` constant.
+- When suggesting logic for the `NotificationListener`, refer to the `ALLOWED_APP_NAMES` constant.
 - Always check `src/components/reusable` before suggesting a new component.
 - **Headless Service Code**: Remember that headless tasks cannot make API calls. Parse & save to SecureStore only.
 - **Confirmation Screen**: When implementing `/transactions/confirm`, ensure:
