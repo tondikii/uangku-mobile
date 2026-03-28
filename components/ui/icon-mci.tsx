@@ -1,7 +1,7 @@
 import type {FC} from "react";
 import React from "react";
 import {StyleProp, TouchableOpacity} from "react-native";
-import FontAwesome6 from "react-native-vector-icons/FontAwesome6";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
 interface IconProps {
   name: string;
@@ -13,18 +13,17 @@ interface IconProps {
 
 const Icon: FC<IconProps> = ({
   name,
-  size = 20,
+  size = 24,
   color = "#ffffff",
   onPress,
   style,
 }) => {
   const IconElement = (
-    <FontAwesome6
+    <MaterialCommunityIcons
       name={name}
       size={size}
       color={color}
       style={style ? style : undefined}
-      solid
     />
   );
 

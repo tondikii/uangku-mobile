@@ -9,11 +9,23 @@ const tabs = [
   {
     name: "transactions",
     title: "Transaksi",
-    icon: "money-bill-transfer",
+    icon: "cash-sync",
   },
-  {name: "wallets", title: "Dompet", icon: "wallet"},
-  {name: "report", title: "Laporan", icon: "chart-pie"},
-  {name: "settings", title: "Pengaturan", icon: "user-gear"},
+  {
+    name: "wallets",
+    title: "Dompet",
+    icon: "wallet-bifold-outline",
+  },
+  {
+    name: "report",
+    title: "Laporan",
+    icon: "chart-arc",
+  },
+  {
+    name: "settings",
+    title: "Pengaturan",
+    icon: "cog-outline",
+  },
 ];
 
 export default function TabLayout() {
@@ -46,9 +58,7 @@ export default function TabLayout() {
           name={name}
           options={{
             title: title,
-            tabBarIcon: ({color}) => (
-              <Icon size={20} name={icon} color={color} />
-            ),
+            tabBarIcon: ({color}) => <Icon name={icon} color={color} />,
             headerShown: name === "report",
           }}
         />

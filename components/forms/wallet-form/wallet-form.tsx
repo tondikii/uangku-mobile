@@ -11,7 +11,6 @@ import {
   Button,
   Dialog,
   Portal,
-  // Switch,
   Text,
   TextInput,
   useTheme,

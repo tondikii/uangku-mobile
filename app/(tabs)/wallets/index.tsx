@@ -40,7 +40,6 @@ export default function WalletsScreen() {
     if (!wallets.length)
       return (
         <EmptyState
-          icon="wallet"
           title="Belum ada dompet"
           subtitle="Dompet anda akan muncul di sini."
           onRefetch={refetch}

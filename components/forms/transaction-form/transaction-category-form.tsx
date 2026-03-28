@@ -1,7 +1,7 @@
 import {Icon} from "@/components/ui";
 import {useMutation} from "@/hooks/axios";
 import React, {memo, useCallback, useEffect, useState} from "react";
-import {FlatList, StyleSheet, TouchableOpacity} from "react-native";
+import {FlatList, StyleSheet, TouchableOpacity, View} from "react-native";
 import {
   Button,
   Dialog,
@@ -12,39 +12,75 @@ import {
   useTheme,
 } from "react-native-paper";
 
-// ─── Icon options ─────────────────────────────────────────────────────────────
-// Common FA6 icons suitable for transaction categories
+// ─── (Material Community Icons) ──────────────────────────────
 const ICON_OPTIONS = [
-  "utensils",
-  "car",
-  "house",
-  "heart",
-  "shirt",
-  "graduation-cap",
-  "plane",
-  "dumbbell",
-  "gamepad",
-  "music",
-  "dog",
-  "baby",
-  "briefcase",
-  "gift",
-  "coffee",
-  "pizza-slice",
-  "bus",
-  "bolt",
-  "wifi",
-  "tv",
-  "phone",
-  "shopping-bag",
-  "hospital",
-  "wallet",
-  "money-bill",
-  "piggy-bank",
-  "chart-line",
-  "receipt",
+  // Finance & Shopping
   "tag",
-  "circle",
+  "cash",
+  "wallet",
+  "bank",
+  "credit-card",
+  "cart-outline",
+  "shopping",
+  "gift-outline",
+  "sale",
+  "ticket-percent-outline",
+  // Food & Drink
+  "silverware-fork-knife",
+  "coffee",
+  "food-apple-outline",
+  "cookie-outline",
+  "hamburger",
+  "ice-cream",
+  "glass-wine",
+  "muffin",
+  // Transport & Travel
+  "car-outline",
+  "bus-side",
+  "airplane",
+  "motorbike",
+  "train-variant",
+  "gas-station-outline",
+  "map-marker-outline",
+  "taxi",
+  // Home & Bills
+  "home-variant-outline",
+  "sofa-outline",
+  "tools",
+  "flash-outline",
+  "water-outline",
+  "broom",
+  "shield-check-outline",
+  "percent-outline",
+  // Lifestyle & Health
+  "heart-pulse",
+  "medical-bag",
+  "pill",
+  "dumbbell",
+  "gamepad-variant-outline",
+  "movie-open-outline",
+  "music-note",
+  "camera-outline",
+  "book-open-variant",
+  // Tech & Communication
+  "laptop",
+  "cellphone-wireless",
+  "wifi",
+  "television",
+  "controller-classic-outline",
+  "printer-outline",
+  "web",
+  // People & Others
+  "account-group-outline",
+  "baby-face-outline",
+  "paw",
+  "tshirt-crew-outline",
+  "briefcase-outline",
+  "school-outline",
+  "church-outline",
+  "star-outline",
+  "alert-circle-outline",
+  "circle-outline",
 ];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -93,7 +129,7 @@ const IconOption = memo(
       >
         <Icon
           name={name}
-          size={18}
+          size={22}
           color={isSelected ? colors.onPrimary : colors.onSurfaceVariant}
         />
       </TouchableOpacity>
@@ -117,9 +153,7 @@ const TransactionCategoryFormSheet = ({
 
   const [name, setName] = useState("");
   const [iconName, setIconName] = useState("tag");
-  const [nameError, setNameError] = useState("");
 
-  // Sync form when editing
   useEffect(() => {
     if (editData) {
       setName(editData.name);
@@ -128,7 +162,6 @@ const TransactionCategoryFormSheet = ({
       setName("");
       setIconName("tag");
     }
-    setNameError("");
   }, [editData, visible]);
 
   const {
@@ -147,10 +180,6 @@ const TransactionCategoryFormSheet = ({
   const error = createError || updateError;
 
   const handleSave = useCallback(async () => {
-    if (!name.trim()) {
-      setNameError("Category name is required");
-      return;
-    }
     try {
       if (isEdit) {
         await updateCategory({name: name.trim(), iconName, transactionTypeId});
@@ -164,7 +193,7 @@ const TransactionCategoryFormSheet = ({
       onSuccess();
       onDismiss();
     } catch {
-      // error shown via Snackbar
+      // error ditampilkan via Snackbar
     }
   }, [
     name,
@@ -179,79 +208,87 @@ const TransactionCategoryFormSheet = ({
 
   const handleNameChange = useCallback((val: string) => {
     setName(val);
-    if (val.trim()) setNameError("");
   }, []);
 
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss} style={styles.dialog}>
-        <Dialog.Title>{isEdit ? "Edit Category" : "New Category"}</Dialog.Title>
+        <Dialog.Title>
+          {isEdit ? "Ubah Kategori" : "Kategori Baru"}
+        </Dialog.Title>
 
         <Dialog.Content style={styles.dialogContent}>
-          {/* Name input */}
-          <TextInput
-            mode="outlined"
-            label="Category name"
-            value={name}
-            onChangeText={handleNameChange}
-            error={!!nameError}
-            activeOutlineColor={nameError ? colors.error : colors.primary}
-            autoCapitalize="words"
-            style={styles.nameInput}
-          />
-          {!!nameError && (
-            <Text
-              variant="labelSmall"
-              style={[styles.errorText, {color: colors.error}]}
+          <View style={styles.inputContainer}>
+            <View
+              style={[
+                styles.previewBox,
+                {backgroundColor: colors.primaryContainer},
+              ]}
             >
-              {nameError}
-            </Text>
-          )}
+              <Icon name={iconName} size={28} color={colors.primary} />
+            </View>
 
-          {/* Icon picker */}
+            <TextInput
+              mode="outlined"
+              label="Nama Kategori"
+              value={name}
+              onChangeText={handleNameChange}
+              style={styles.nameInput}
+            />
+          </View>
+
           <Text
             variant="labelMedium"
             style={[styles.iconLabel, {color: colors.onSurfaceVariant}]}
           >
-            Icon
+            Pilih Ikon
           </Text>
-          <FlatList
-            data={ICON_OPTIONS}
-            keyExtractor={(item) => item}
-            numColumns={6}
-            scrollEnabled={false}
-            renderItem={({item}) => (
-              <IconOption
-                name={item}
-                isSelected={iconName === item}
-                onPress={setIconName}
-              />
-            )}
-            contentContainerStyle={styles.iconGrid}
-          />
+
+          {/* Grid Ikon yang dapat di-scroll */}
+          <View style={styles.listWrapper}>
+            <FlatList
+              data={ICON_OPTIONS}
+              keyExtractor={(item) => item}
+              numColumns={5}
+              showsVerticalScrollIndicator={false}
+              renderItem={({item}) => (
+                <IconOption
+                  name={item}
+                  isSelected={iconName === item}
+                  onPress={setIconName}
+                />
+              )}
+              contentContainerStyle={styles.iconGrid}
+            />
+          </View>
         </Dialog.Content>
 
         <Dialog.Actions style={styles.actions}>
-          {isEdit && onDeleteRequest && (
-            <Button
-              textColor={colors.error}
-              onPress={() => editData && onDeleteRequest(editData)}
-              disabled={loading}
-            >
-              Delete
+          <View style={styles.leftActions}>
+            {isEdit && onDeleteRequest && (
+              <Button
+                textColor={colors.error}
+                onPress={() => editData && onDeleteRequest(editData)}
+                disabled={loading}
+              >
+                Hapus
+              </Button>
+            )}
+          </View>
+          <View style={styles.rightActions}>
+            <Button onPress={onDismiss} disabled={loading}>
+              Batal
             </Button>
-          )}
-          <Button onPress={onDismiss} disabled={loading}>
-            Cancel
-          </Button>
-          <Button
-            mode="contained"
-            onPress={handleSave}
-            loading={loading}
-            disabled={loading}
-          >
-            {isEdit ? "Update" : "Create"}
-          </Button>
+            <Button
+              mode="contained"
+              onPress={handleSave}
+              loading={loading}
+              disabled={loading || !name.trim()}
+              style={styles.saveBtn}
+            >
+              Simpan
+            </Button>
+          </View>
         </Dialog.Actions>
       </Dialog>
 
@@ -273,34 +310,69 @@ export default TransactionCategoryFormSheet;
 
 const styles = StyleSheet.create({
   dialog: {
-    maxHeight: "80%",
-  },
-  actions: {
-    justifyContent: "space-between",
+    maxHeight: "85%",
+    borderRadius: 24,
   },
   dialogContent: {
     paddingBottom: 0,
   },
-  nameInput: {
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     marginBottom: 4,
+  },
+  previewBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  nameInput: {
+    flex: 1,
   },
   errorText: {
     marginBottom: 8,
-    marginLeft: 4,
+    marginLeft: 68, // Sesuaikan dengan posisi input teks
   },
   iconLabel: {
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 16,
+    marginBottom: 12,
+    fontWeight: "bold",
+  },
+  listWrapper: {
+    height: 250, // Memberikan ruang scroll untuk ikon
+    paddingBottom: 8,
   },
   iconGrid: {
-    gap: 8,
+    paddingBottom: 16,
   },
   iconOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    flex: 1,
+    aspectRatio: 1,
+    maxWidth: "18%", // Sekitar 5 kolom
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    margin: 2,
+    margin: 4,
+  },
+  actions: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  leftActions: {
+    flex: 1,
+  },
+  rightActions: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  saveBtn: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
   },
 });

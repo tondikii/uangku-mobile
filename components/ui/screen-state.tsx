@@ -1,7 +1,7 @@
 import React, {memo} from "react";
 import {StyleSheet, View} from "react-native";
 import {ActivityIndicator, Button, Text, useTheme} from "react-native-paper";
-import Icon from "./icon-fa6";
+import Icon from "./icon-mci";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,7 +15,6 @@ interface ErrorStateProps {
 }
 
 interface EmptyStateProps {
-  icon: string;
   title: string;
   subtitle?: string;
   onRefetch?: () => void;
@@ -78,15 +77,10 @@ ErrorState.displayName = "ErrorState";
 // ─── Empty ────────────────────────────────────────────────────────────────────
 
 export const EmptyState = memo(
-  ({icon, title, subtitle, onRefetch}: EmptyStateProps) => {
+  ({title, subtitle, onRefetch}: EmptyStateProps) => {
     const {colors} = useTheme();
     return (
       <View style={styles.center}>
-        <View
-          style={[styles.iconWrapper, {backgroundColor: colors.surfaceVariant}]}
-        >
-          <Icon name={icon} size={22} color={colors.onSurfaceVariant} />
-        </View>
         <Text
           variant="titleSmall"
           style={[styles.title, {color: colors.onSurface}]}

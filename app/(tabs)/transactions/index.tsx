@@ -56,7 +56,6 @@ export default function TransactionScreen() {
     if (!transactions.length)
       return (
         <EmptyState
-          icon="receipt"
           title="Belum ada transaksi"
           subtitle="Transaksi anda akan muncul di sini."
           onRefetch={refetch}

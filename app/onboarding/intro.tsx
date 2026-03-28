@@ -1,4 +1,4 @@
-import {MaterialCommunityIcons} from "@expo/vector-icons";
+import {Icon} from "@/components/ui";
 import {router} from "expo-router";
 import React from "react";
 import {Image, StyleSheet, View} from "react-native";
@@ -65,11 +65,7 @@ export default function IntroScreen() {
                   {backgroundColor: colors.primaryContainer},
                 ]}
               >
-                <MaterialCommunityIcons
-                  name={feature.icon}
-                  size={22}
-                  color={colors.primary}
-                />
+                <Icon name={feature.icon} size={22} color={colors.primary} />
               </View>
               <View style={styles.featureText}>
                 <Text variant="titleSmall" style={styles.featureTitle}>

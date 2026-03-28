@@ -5,7 +5,7 @@ import type {FC} from "react";
 import {useCallback} from "react";
 import {FlatList, RefreshControl, StyleSheet, View} from "react-native";
 import {Divider, List, Text, useTheme} from "react-native-paper";
-import Icon from "./icon-fa6";
+import Icon from "./icon-mci";
 import TransactionBadge from "./transaction-badge";
 
 interface TransactionsListProps {

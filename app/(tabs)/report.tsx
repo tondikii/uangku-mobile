@@ -64,7 +64,6 @@ export default function ReportScreen() {
     if (!chartData.length)
       return (
         <EmptyState
-          icon="chart-pie"
           title="Belum ada data laporan"
           subtitle="Data laporan anda akan muncul di sini."
           onRefetch={refetch}

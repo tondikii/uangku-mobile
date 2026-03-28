@@ -1,5 +1,5 @@
 export {default as AddButton} from "./add-button";
-export {default as Icon} from "./icon-fa6";
+export {default as Icon} from "./icon-mci";
 export {default as NotificationListenerToggle} from "./notification-listener-toggle";
 export {default as ReportChart} from "./report-chart";
 export * from "./screen-state";
